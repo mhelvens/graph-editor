@@ -1,0 +1,57 @@
+{
+  "name": "graph-editor",
+  "version": "0.1.0",
+  "description": "graph-editor for ApiNATOMY 2",
+  "main": "dist/index.html",
+  "scripts": {
+    "build": "webpack"
+  },
+  "authors": [
+    "Michiel Helvensteijn <mhelvens@gmail.com>",
+    "Syed Islam <syed.islam@uel.ac.uk>"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "http://www.github.com/mhelvens/graph-editor"
+  },
+  "devDependencies": {
+    "autoprefixer-loader": "~3",
+    "babel-core": "~5",
+    "babel-loader": "~5",
+    "babel-plugin-angular2-annotations": "~2",
+    "babylon": "~6",
+    "bootstrap-sass": "~3",
+    "css-loader": "~0.22",
+    "es6-shim": "~0.33",
+    "expose-loader": "~0.7",
+    "file-loader": "~0.8",
+    "html-webpack-plugin": "~1",
+    "imports-loader": "~0.6",
+    "json-loader": "~0.5",
+    "node-sass": "~3",
+    "reflect-metadata": "~0.1",
+    "sass-loader": "~3",
+    "style-loader": "~0.13",
+    "typescript": "~1",
+    "url-loader": "~0.5",
+    "webpack": "~1",
+    "webpack-typescript": "~0.5",
+    "zone.js": "~0.5"
+  },
+  "dependencies": {
+    "angular2": "~2.0.0-beta",
+    "bootstrap-colorpicker": "~2",
+    "chroma-js": "~1",
+    "jquery": "~2",
+    "kefir": "~3",
+    "promise-defer": "~1",
+    "superagent": "~1",
+    "superagent-as-promised": "~3",
+    "rxjs": "~5.0.0-beta"
+  },
+  "keywords": [
+    "apinatomy",
+    "graph-editor"
+  ]
+}
