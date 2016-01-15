@@ -1,5 +1,6 @@
 import request from 'superagent';
-require('superagent-as-promised')(request);
+import superAgentAsPromised from 'superagent-as-promised';
+superAgentAsPromised(request);
 
 const basePath = Symbol('basePath');
 

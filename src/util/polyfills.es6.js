@@ -2,6 +2,8 @@
 // extending some core prototypes for convenience                                                                     //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+import 'svg-innerhtml';
+
 if (typeof Object.entries !== 'function') {
 	Object.defineProperty(Object, 'entries', {
 		*value(obj) {

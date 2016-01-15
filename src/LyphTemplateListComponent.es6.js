@@ -8,10 +8,10 @@ import Resources, {request} from './util/Resources.es6.js';
 	selector: 'lyph-template-list',
 	events: ['select'/*, 'add'*/],
 	pipes: [
-		require('./util/substring-pipe.es6.js')
+		require('./util/substring-pipe.es6.js').default
 	],
 	directives: [
-		require('./LyphTemplateComponent.es6.js')
+		require('./LyphTemplateComponent.es6.js').default
 	],
 	template: `
 
@@ -57,8 +57,7 @@ export default class LyphTemplateList {
 	select = new EventEmitter;
 	//add    = new EventEmitter;
 
-	static parameters = [[Resources]];
-	constructor(resources) {
+	constructor(resources: Resources) {
 		this.resources = resources;
 		this.allResources = resources.getAllResources_sync();
 		this.models = resources.getAllResources_sync()['lyphTemplates'];

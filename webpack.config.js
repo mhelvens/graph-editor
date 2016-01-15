@@ -4,10 +4,10 @@ module.exports = {
 	devtool: 'source-map',
 	entry: {
 		'index': [
-			'babel-core/polyfill',
-			'./src/util/polyfills.es6.js',
+			'babel-polyfill',
 			'reflect-metadata',
 			'expose?Zone!zone.js',
+			'./src/util/polyfills.es6.js',
 			'./src/index.es6.js'
 		]
 	},
@@ -22,11 +22,16 @@ module.exports = {
 				test: /\.es6\.js$/,
 				loader: 'babel',
 				query: {
-					compact: false,
-					optional: [
-						'es7.decorators',
-						'es7.classProperties',
-						'es7.functionBind'
+					cacheDirectory: true,
+					presets: [
+						'es2015',
+						'stage-0'
+					],
+					plugins: [
+						'angular2-annotations',
+						'transform-decorators-legacy',
+						'transform-class-properties',
+						'transform-flow-strip-types'
 					]
 				}
 			},

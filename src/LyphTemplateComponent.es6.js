@@ -7,8 +7,8 @@ import Resources                from './util/Resources.es6.js';
 @Component({
 	selector: 'lyph-template',
 	pipes: [
-		require('./util/underline-substring-pipe.es6.js'),
-		require('./util/escape-html-pipe.es6.js')
+		require('./util/underline-substring-pipe.es6.js').default,
+		require('./util/escape-html-pipe.es6.js')        .default
 	],
 	inputs: ['model', 'highlight'],
 	host: {
@@ -37,8 +37,7 @@ export default class LyphTemplate {
 
 	static endpoint = 'lyphTemplates';
 
-	//static parameters = [[Resources]];
-	//constructor(resources) {
+	//constructor(resources: Resources) {
 	//
 	//}
 
