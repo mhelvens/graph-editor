@@ -1,4 +1,17 @@
 import {Component, View, Inject, ChangeDetectorRef, ElementRef} from 'angular2/core';
+import interact                                                 from './libs/interact.js';
+import $                                                        from 'jquery';
+
+
+class BoxCreation {
+	constructor(data, onResolved) {
+		Object.assign(this, data);
+		this.resolve = (createdComponent) => {
+			onResolved(createdComponent);
+			this.resolve = ()=>{ console.log('BoxCreation#resolve method called more than once!') };
+		};
+	}
+}
 
 
 @Component({
@@ -36,9 +49,7 @@ import {Component, View, Inject, ChangeDetectorRef, ElementRef} from 'angular2/c
 
 		<svg id="canvas">
 
-			<g lyphTemplate="a"></g>
-
-			<g lyphTemplate="b"></g>
+			<g lyphTemplate *ngFor="#t of lyphTemplates" [creation]="t"></g>
 
 		</svg>
 
@@ -116,12 +127,100 @@ import {Component, View, Inject, ChangeDetectorRef, ElementRef} from 'angular2/c
 })
 export default class AppComponent {
 
-	constructor() {
+	lyphTemplates = [];
 
+	tmp = 3;
 
+	readyTool = {
+		form: 'box',
+		type: 'LyphTemplate',
+		model: 'a'
+	};
 
+	constructor({nativeElement}: ElementRef, changeDetectorRef: ChangeDetectorRef) {
+		Object.assign(this, { nativeElement, changeDetectorRef });
 	}
 
+	ngOnInit() {
+
+		/* set references */
+		this.element = $(this.nativeElement);
+		this.svg     = this.element.children('svg').css('overflow', 'visible');
+
+		/* interact.js setup */
+		this.interactable = interact($(this.nativeElement).children('svg')[0])
+
+		/* creating new artefacts by clicking down the mouse */
+		this.interactable.on('down', (event) => {
+
+			if (!this.readyTool) { return }
+
+			if (this.readyTool.form === 'box' && this.readyTool.type === 'LyphTemplate') {
+				this.lyphTemplates.push(new BoxCreation({
+					model: 'a',
+					x: event.clientX,
+					y: event.clientY
+				}, (boxComponent) => {
+					event.interaction.start(
+						{
+							name:  'resize',
+							edges: { bottom: true, right: true }
+						},
+						boxComponent.interactable,
+						boxComponent.rect[0]
+					);
+				}));
+			}
+
+			if (this.tmp-- === 0) {
+				this.readyTool = null;
+			}
+
+		});
+
+		/* dropping on the main canvas */
+		this.interactable.dropzone({
+			overlap: 1, // require whole rectangle to be inside
+			ondropactivate: (event) => {
+				//// add active dropzone feedback
+				//event.target.classList.add('drop-active');
+			},
+			ondragenter: (event) => {
+				//var draggableElement = event.relatedTarget,
+				//    dropzoneElement = event.target;
+				//
+				//// feedback the possibility of a drop
+				//dropzoneElement.classList.add('drop-target');
+				//draggableElement.classList.add('can-drop');
+				//draggableElement.textContent = 'Dragged in';
+			},
+			ondragleave: (event) => {
+				//// remove the drop feedback style
+				//event.target.classList.remove('drop-target');
+				//event.relatedTarget.classList.remove('can-drop');
+				//event.relatedTarget.textContent = 'Dragged out';
+			},
+			ondrop: (event) => {
+				//event.relatedTarget.textContent = 'Dropped';
+				let other = $(event.relatedTarget).data('component');
+				console.log(`'${other.model}' dropped into the main canvas`);
+
+				let thisRect  = this .svg[0].getBoundingClientRect();
+				let otherRect = other.svg[0].getBoundingClientRect();
+
+				other.element.appendTo(this.svg);
+				other.x = otherRect.left - thisRect.left;
+				other.y = otherRect.top  - thisRect.top;
+
+			},
+			ondropdeactivate: (event) => {
+				//// remove active dropzone feedback
+				//event.target.classList.remove('drop-active');
+				//event.target.classList.remove('drop-target');
+			}
+		});
+
+	}
 
 
 }

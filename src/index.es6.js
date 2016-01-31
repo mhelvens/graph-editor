@@ -13,15 +13,21 @@ import './index.scss';
 /* run the application */
 (async () => {
 
-	/* pre-load all resources */
+	///* pre-load all resources */
+	//console.info("Downloading resources...");
 	let resources = new Resources;
-	await resources.preloadAllResources();
+	//await resources.preloadAllResources();
+
 
 	/* bootstrap Angular 2 */
+	console.info("Bootstrapping application...");
 	$('<app>').appendTo('body');
 	enableProdMode();
 	bootstrap(AppComponent, [
 		provide(Resources, {useValue: resources})
 	]);
+
+	/* Done */
+	console.info("Done.");
 
 })();
