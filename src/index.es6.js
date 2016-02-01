@@ -1,13 +1,14 @@
 /* library imports */
 import {bootstrap}                          from 'angular2/bootstrap';
 import {Component, provide, enableProdMode} from 'angular2/core';
-import $                         from 'jquery';
-import scrollbarSize from 'scrollbar-size';
-import GoldenLayout  from './libs/golden-layout.es6.js';
+import $                                    from 'jquery';
+import scrollbarSize                        from 'scrollbar-size';
+import GoldenLayout                         from './libs/golden-layout.es6.js';
 
 /* local imports */
-import AppComponent from './AppComponent.es6.js';
-import Resources    from './util/Resources.es6.js';
+import LyphCanvasComponent       from './LyphCanvasComponent.es6.js';
+import LyphTemplateListComponent from './LyphTemplateListComponent.es6.js';
+import Resources                 from './util/Resources.es6.js';
 
 /* styling */
 import './index.scss';
@@ -15,6 +16,7 @@ import './index.scss';
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 (async () => { try {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 	/* golden layout setup */
 	let layout = new GoldenLayout({
@@ -50,20 +52,42 @@ import './index.scss';
 
 	/* AngularJS 2 app component */
 	console.info("Bootstrapping application...");
-	await new Promise((resolve, reject) => {
+	await new Promise((resolve) => {
 		try {
 			@Component({
 				selector: 'bootstrap',
 				directives: [
-					AppComponent,
-				    require('./LyphTemplateListComponent.es6.js').default
+					LyphCanvasComponent,
+					LyphTemplateListComponent
 				],
 				template: `
 					<lyph-template-list></lyph-template-list>
-					<app></app>
+					<lyph-canvas [tool]="currentTool()" (added)="onArtefactAdded()"></lyph-canvas>
 				`
 			})
-			class BootstrapComponent { ngOnInit() { resolve() } }
+			class BootstrapComponent {
+
+				selectedForm  = 'box';
+				selectedType  = 'LyphTemplate';
+				selectedModel = 'a';
+
+				tmp = 2;
+
+				currentTool() {
+					if (!this.selectedForm || !this.selectedType || !this.selectedModel) { return null }
+					return {
+						form: this.selectedForm,
+						type: this.selectedType,
+						model: this.selectedModel
+					};
+				}
+				onArtefactAdded() {
+					if (this.tmp-- === 0) {
+						this.selectedModel = null;
+					}
+				}
+				ngOnInit() { resolve() }
+			}
 			$('<bootstrap>').appendTo('body');
 			enableProdMode();
 			bootstrap(BootstrapComponent, [
@@ -80,6 +104,7 @@ import './index.scss';
 
 	/* Done */
 	console.info("Done.");
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 } catch (err) { console.log('Error:', err) } })();

@@ -1,7 +1,8 @@
-import {Component, View, Inject, ChangeDetectorRef, ElementRef} from 'angular2/core';
-import interact                                                 from './libs/interact.js';
-import $                                                        from 'jquery';
+import {Component, ChangeDetectorRef, ElementRef, EventEmitter} from 'angular2/core';
+import interact                                   from './libs/interact.js';
+import $                                          from 'jquery';
 
+import LyphTemplateBoxComponent from './LyphTemplateBoxComponent.es6.js';
 
 class BoxCreation {
 	constructor(data, onResolved) {
@@ -15,10 +16,12 @@ class BoxCreation {
 
 
 @Component({
-    selector:   'app',
+    selector:   'lyph-canvas',
     directives: [
-        require('./LyphTemplateBoxComponent.es6.js') .default
+	    LyphTemplateBoxComponent
     ],
+	inputs: ['tool'],
+	events: ['added'],
     template: `
 
 		<svg id="canvas">
@@ -99,17 +102,11 @@ class BoxCreation {
 
 	`]
 })
-export default class AppComponent {
+export default class LyphCanvasComponent {
 
 	lyphTemplates = [];
 
-	tmp = 3;
-
-	readyTool = {
-		form: 'box',
-		type: 'LyphTemplate',
-		model: 'a'
-	};
+	added = new EventEmitter;
 
 	constructor({nativeElement}: ElementRef, changeDetectorRef: ChangeDetectorRef) {
 		Object.assign(this, { nativeElement, changeDetectorRef });
@@ -122,14 +119,14 @@ export default class AppComponent {
 		this.svg     = this.element.children('svg').css('overflow', 'visible');
 
 		/* interact.js setup */
-		this.interactable = interact($(this.nativeElement).children('svg')[0])
+		this.interactable = interact($(this.nativeElement).children('svg')[0]);
 
 		/* creating new artefacts by clicking down the mouse */
 		this.interactable.on('down', (event) => {
 
-			if (!this.readyTool) { return }
+			if (!this.tool) { return }
 
-			if (this.readyTool.form === 'box' && this.readyTool.type === 'LyphTemplate') {
+			if (this.tool.form === 'box' && this.tool.type === 'LyphTemplate') {
 				let canvasRect = this.element[0].getBoundingClientRect();
 				this.lyphTemplates.push(new BoxCreation({
 					model: 'a',
@@ -144,11 +141,12 @@ export default class AppComponent {
 						boxComponent.interactable,
 						boxComponent.rect[0]
 					);
+					let onCreateEnd = () => {
+						this.added.next(this.tool);
+						boxComponent.interactable.off(onCreateEnd);
+					};
+					boxComponent.interactable.on('resizeend', onCreateEnd);
 				}));
-			}
-
-			if (this.tmp-- === 0) {
-				this.readyTool = null;
 			}
 
 		});
