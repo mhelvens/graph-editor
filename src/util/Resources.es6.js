@@ -4,6 +4,7 @@ import {sw} from '../util/misc.es6.js';
 request.basePath = 'http://open-physiology.org:8889';
 
 const fetchResources = Symbol('fetchResources');
+const fetchSpecificResources = Symbol('fetchSpecificResources');
 const models         = Symbol('models');
 const modelLists     = Symbol('modelLists');
 
@@ -24,8 +25,19 @@ export default class Resources {
 		}
 	}
 
+	async [fetchSpecificResources](type,ids) {
+		if (!this[models][type] && !this[modelLists][type]) {
+			this[modelLists][type] = await request.get(`/${type}/${ids.join(',')}`).then(v => v.body);
+			this[models][type] = {};
+			for (let model of this[modelLists][type]) {
+				this[models][type][model.id] = model;
+			}
+		}
+	}
+
 	async preloadAllResources() {
-		await this[fetchResources]('lyphTemplates');
+		await this[fetchResources]('layerTemplates');
+		await this[fetchSpecificResources]('lyphTemplates', this.getAllResources_sync().layerTemplates.map(lt => lt.lyphTemplate));
 	}
 
 	getAllResources_sync() {

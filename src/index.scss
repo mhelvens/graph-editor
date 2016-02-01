@@ -8,6 +8,22 @@
 .icon-LyphTemplate   { background-image: url(img/icon-LyphTemplate.png)   !important }
 .icon-Correlation    { background-image: url(img/icon-Correlation.png)    !important }
 
+////////////////////////////////////////////////////////////////////////////////
+
+/* golden-layout content panels */
+.lm_content {
+	background-color: white;
+}
+
+/* make splitter handles smaller so as not to interfere with adjacent scroll-bars */
+.lm_splitter.lm_horizontal .lm_drag_handle { width:  8px !important; left: -3px !important; }
+.lm_splitter.lm_vertical   .lm_drag_handle { height: 8px !important; top:  -3px !important; }
+
+/* allow an element inside an .lm_content with overflow-y:scroll to have a position:absolute */
+.lm_item_container {
+	position: relative;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 html, body {
@@ -24,7 +40,4 @@ html, body {
 
 svg.dragging rect.layerTemplate {
 	pointer-events: visibleFill;
-}
-rect[layerTemplate] {
-
 }

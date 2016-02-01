@@ -17,35 +17,9 @@ class BoxCreation {
 @Component({
     selector:   'app',
     directives: [
-	    require('./LyphTemplateListComponent.es6.js').default,
         require('./LyphTemplateBoxComponent.es6.js') .default
     ],
-    //template: `
-    //
-		//<div class="container-fluid">
-		//	<div class="row">
-		//		<aside class="col-xs-0 col-sm-3 col-md-2">
-    //
-		//			<div class="tool-panel">
-		//				<div class="header">Toolbox</div>
-    //
-		//				<lyph-template-list></lyph-template-list>
-    //
-		//			</div>
-    //
-		//		</aside>
-		//		<main class="col-xs-12 col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2">
-    //
-		//			<div class="row">
-		//				<!--TODO-->
-		//			</div>
-    //
-		//		</main>
-		//	</div>
-		//</div>
-    //
-    //`,
-	template: `
+    template: `
 
 		<svg id="canvas">
 
@@ -156,10 +130,11 @@ export default class AppComponent {
 			if (!this.readyTool) { return }
 
 			if (this.readyTool.form === 'box' && this.readyTool.type === 'LyphTemplate') {
+				let canvasRect = this.element[0].getBoundingClientRect();
 				this.lyphTemplates.push(new BoxCreation({
 					model: 'a',
-					x: event.clientX,
-					y: event.clientY
+					x: event.clientX - canvasRect.left,
+					y: event.clientY - canvasRect.top
 				}, (boxComponent) => {
 					event.interaction.start(
 						{
