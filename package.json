@@ -47,6 +47,7 @@
     "bootstrap-colorpicker": "~2",
     "chroma-js": "~1",
     "es6-shim": "~0.33",
+    "golden-colors": "^2.0.0",
     "golden-layout": "^1.0.10",
     "interact.js": "~1",
     "jquery": "~2",

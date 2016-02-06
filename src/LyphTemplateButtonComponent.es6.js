@@ -13,13 +13,12 @@ import Resources                from './util/Resources.es6.js';
 	inputs: ['model', 'highlight'],
 	host: {
 		'[class.resource-view]': ` true               `,
-		'[title]':               ` model.name         `,
-		'(click)':               ` select.next(model) `
+		'[title]':               ` model.name         `
 	},
 	template: `
 
 		<div class="icon icon-LyphTemplate"></div>
-		<div class="text-content" [innerHtml]="model.name | escapeHTML | underlineSubstring:highlight"></div>
+		<div class="text-content" [innerHtml]="(model.name + ' ('+model.id+')') | escapeHTML | underlineSubstring:highlight"></div>
 
 	`,
 	styles: [`
@@ -33,12 +32,8 @@ import Resources                from './util/Resources.es6.js';
 
 	`]
 })
-export default class LyphTemplate {
+export default class LyphTemplateButtonComponent {
 
 	static endpoint = 'lyphTemplates';
-
-	//constructor(resources: Resources) {
-	//
-	//}
 
 }

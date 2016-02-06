@@ -10,6 +10,7 @@
       <w>onend</w>
       <w>onmove</w>
       <w>onstart</w>
+      <w>resizeend</w>
       <w>resizemove</w>
       <w>superagent</w>
     </words>

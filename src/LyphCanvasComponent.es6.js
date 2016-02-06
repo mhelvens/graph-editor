@@ -4,6 +4,8 @@ import $                                          from 'jquery';
 
 import LyphTemplateBoxComponent from './LyphTemplateBoxComponent.es6.js';
 
+import RectangleComponent from './RectangleComponent.es6.js';
+
 class BoxCreation {
 	constructor(data, onResolved) {
 		Object.assign(this, data);
@@ -20,13 +22,13 @@ class BoxCreation {
     directives: [
 	    LyphTemplateBoxComponent
     ],
-	inputs: ['tool'],
+	inputs: ['activeTool'],
 	events: ['added'],
     template: `
 
 		<svg id="canvas">
 
-			<g lyphTemplate *ngFor="#t of lyphTemplates" [creation]="t"></g>
+			<g lyphTemplateBox *ngFor="#t of lyphTemplates" [creation]="t" [activeTool]="activeTool"></g>
 
 		</svg>
 
@@ -34,102 +36,46 @@ class BoxCreation {
 	styles: [`
 
 		:host, :host > svg {
-			position: absolute;
-			top: 0;
-			left: 0;
+			position:   absolute;
+			top:        0;
+			left:       0;
 			min-width:  100%;
 			min-height: 100%;
 			padding:    0;
 			margin:     0;
 		}
 
-		:host > .container-fluid {
-			position: relative;
-			margin: 10px;
-			min-height: 100%;
-		}
-
-		:host > .container-fluid > .row {
-			margin: 0;
-		}
-
-		aside { display: none }
-		@media (min-width: 768px) {
-			aside {
-				position: fixed;
-				top:      0;
-				bottom:   0;
-				left:     0;
-				z-index:  100;
-				display:  block;
-				overflow-x: visible;
-				overflow-y: visible;
-			}
-		}
-
-		aside > .tool-panel {
-			position: absolute;
-			top:     10px;
-			left:    10px;
-			bottom:  10px;
-			right:   10px;
-			padding: 0;
-			background-color: #f5f5f5;
-			border: 1px solid gray;
-			border-radius: 4px;
-			overflow-x: hidden;
-			overflow-y: scroll;
-		}
-
-		aside > .tool-panel > .header {
-			cursor:           default;
-			background-color: gray;
-			color:            white;
-			text-align:       center;
-			font-weight:      bold;
-			display:          block;
-			padding:          10px 15px;
-		}
-
-		main {
-			padding: 0;
-		}
-
-		main .page-header {
-			margin-top: 0;
-		}
-
-
 	`]
 })
-export default class LyphCanvasComponent {
+export default class LyphCanvasComponent extends RectangleComponent {
 
 	lyphTemplates = [];
 
 	added = new EventEmitter;
 
 	constructor({nativeElement}: ElementRef, changeDetectorRef: ChangeDetectorRef) {
-		Object.assign(this, { nativeElement, changeDetectorRef });
+		super({
+			nativeElement,
+			changeDetectorRef
+		});
 	}
 
 	ngOnInit() {
 
-		/* set references */
-		this.element = $(this.nativeElement);
-		this.svg     = this.element.children('svg').css('overflow', 'visible');
-
-		/* interact.js setup */
-		this.interactable = interact($(this.nativeElement).children('svg')[0]);
+		super.initSVG({
+			shell:     $(this.nativeElement),
+			container: $(this.nativeElement).children('svg').css({ overflow: 'visible' })
+		});
 
 		/* creating new artefacts by clicking down the mouse */
 		this.interactable.on('down', (event) => {
 
-			if (!this.tool) { return }
+			if (!this.activeTool) { return }
 
-			if (this.tool.form === 'box' && this.tool.type === 'LyphTemplate') {
-				let canvasRect = this.element[0].getBoundingClientRect();
+			if (this.activeTool.form === 'box' && this.activeTool.type === 'LyphTemplate') {
+				let canvasRect = this.rectangle[0].getBoundingClientRect();
 				this.lyphTemplates.push(new BoxCreation({
-					model: 'a',
+					model: this.activeTool.model,
 					x: event.clientX - canvasRect.left,
 					y: event.clientY - canvasRect.top
 				}, (boxComponent) => {
@@ -139,10 +85,10 @@ export default class LyphCanvasComponent {
 							edges: { bottom: true, right: true }
 						},
 						boxComponent.interactable,
-						boxComponent.rect[0]
+						boxComponent.rectangle[0]
 					);
-					let onCreateEnd = () => {
-						this.added.next(this.tool);
+					const onCreateEnd = () => {
+						this.added.next(this.activeTool);
 						boxComponent.interactable.off(onCreateEnd);
 					};
 					boxComponent.interactable.on('resizeend', onCreateEnd);
@@ -155,41 +101,22 @@ export default class LyphCanvasComponent {
 		this.interactable.dropzone({
 			overlap: 1, // require whole rectangle to be inside
 			ondropactivate: (event) => {
-				//// add active dropzone feedback
-				//event.target.classList.add('drop-active');
-			},
-			ondragenter: (event) => {
-				//var draggableElement = event.relatedTarget,
-				//    dropzoneElement = event.target;
-				//
-				//// feedback the possibility of a drop
-				//dropzoneElement.classList.add('drop-target');
-				//draggableElement.classList.add('can-drop');
-				//draggableElement.textContent = 'Dragged in';
-			},
-			ondragleave: (event) => {
-				//// remove the drop feedback style
-				//event.target.classList.remove('drop-target');
-				//event.relatedTarget.classList.remove('can-drop');
-				//event.relatedTarget.textContent = 'Dragged out';
-			},
-			ondrop: (event) => {
-				//event.relatedTarget.textContent = 'Dropped';
-				let other = $(event.relatedTarget).data('component');
-				console.log(`'${other.model}' dropped into the main canvas`);
-
-				let thisRect  = this .svg[0].getBoundingClientRect();
-				let otherRect = other.svg[0].getBoundingClientRect();
-
-				other.element.appendTo(this.svg);
-				other.x = otherRect.left - thisRect.left;
-				other.y = otherRect.top  - thisRect.top;
-
+				// add active dropzone feedback
 			},
 			ondropdeactivate: (event) => {
-				//// remove active dropzone feedback
-				//event.target.classList.remove('drop-active');
-				//event.target.classList.remove('drop-target');
+				// remove active dropzone feedback
+			},
+			ondragenter: (event) => {
+				// feedback the possibility of a drop
+			},
+			ondragleave: (event) => {
+				// remove the drop feedback style
+			},
+			ondrop: (event) => {
+				let other = $(event.relatedTarget).data('component');
+				other.setParent(this);
+
+				console.log(`'${other.model.name}' (${other.model.id}) dropped into the main canvas`);
 			}
 		});
 

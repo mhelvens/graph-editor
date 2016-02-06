@@ -40,6 +40,10 @@ export function or(...values) {
 	}
 }
 
+export function withoutDuplicates(arr) {
+	return [...new Set(arr)];
+}
+
 export function chainIsDefined(obj, key0, ...otherKeys) {
 	if (typeof key0 === 'undefined') { return true }
 	return !!(key0 in obj) && chainIsDefined(obj[key0], ...otherKeys);

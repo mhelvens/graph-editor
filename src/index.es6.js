@@ -2,13 +2,12 @@
 import {bootstrap}                          from 'angular2/bootstrap';
 import {Component, provide, enableProdMode} from 'angular2/core';
 import $                                    from 'jquery';
-import scrollbarSize                        from 'scrollbar-size';
 import GoldenLayout                         from './libs/golden-layout.es6.js';
 
 /* local imports */
-import LyphCanvasComponent       from './LyphCanvasComponent.es6.js';
-import LyphTemplateListComponent from './LyphTemplateListComponent.es6.js';
-import Resources                 from './util/Resources.es6.js';
+import LyphCanvasComponent             from './LyphCanvasComponent.es6.js';
+import LyphTemplateButtonListComponent from './LyphTemplateButtonListComponent.es6.js';
+import Resources                       from './util/Resources.es6.js';
 
 /* styling */
 import './index.scss';
@@ -58,35 +57,36 @@ import './index.scss';
 				selector: 'bootstrap',
 				directives: [
 					LyphCanvasComponent,
-					LyphTemplateListComponent
+					LyphTemplateButtonListComponent
 				],
 				template: `
-					<lyph-template-list></lyph-template-list>
-					<lyph-canvas [tool]="currentTool()" (added)="onArtefactAdded()"></lyph-canvas>
+					<lyph-template-button-list [(model)]="selectedModel"></lyph-template-button-list>
+					<lyph-canvas [activeTool]=" activeTool " (added)="onArtefactAdded()"></lyph-canvas>
 				`
 			})
 			class BootstrapComponent {
 
 				selectedForm  = 'box';
 				selectedType  = 'LyphTemplate';
-				selectedModel = 'a';
+				selectedModel = null;
 
-				tmp = 2;
-
-				currentTool() {
+				get activeTool() {
 					if (!this.selectedForm || !this.selectedType || !this.selectedModel) { return null }
 					return {
-						form: this.selectedForm,
-						type: this.selectedType,
+						form:  this.selectedForm,
+						type:  this.selectedType,
 						model: this.selectedModel
 					};
 				}
+
 				onArtefactAdded() {
-					if (this.tmp-- === 0) {
-						this.selectedModel = null;
-					}
+					this.selectedModel = null;
 				}
-				ngOnInit() { resolve() }
+
+				ngOnInit() {
+					resolve();
+				}
+
 			}
 			$('<bootstrap>').appendTo('body');
 			enableProdMode();
@@ -98,8 +98,8 @@ import './index.scss';
 
 
 	/* populating the panels */
-	$('bootstrap > lyph-template-list').detach().appendTo(leftPanel);
-	$('bootstrap > app')               .detach().appendTo(mainPanel);
+	$('bootstrap > lyph-template-button-list').detach().appendTo(leftPanel);
+	$('bootstrap > lyph-canvas')              .detach().appendTo(mainPanel);
 
 
 	/* Done */

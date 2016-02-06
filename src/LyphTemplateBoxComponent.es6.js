@@ -1,35 +1,44 @@
-import {Component, ElementRef, ChangeDetectorRef, EventEmitter} from 'angular2/core';
+import {Component, ElementRef, ChangeDetectorRef, forwardRef, OptionalMetadata} from 'angular2/core';
 import interact                                                 from './libs/interact.js';
 import $                                                        from 'jquery';
 
-import {ModelRepresentation} from './util/model-representation.es6.js';
-import Resources             from './util/Resources.es6.js';
+import Resources                 from './util/Resources.es6.js';
 
+import LyphCanvasComponent       from './LyphCanvasComponent.es6.js';
 import LayerTemplateBoxComponent from './LayerTemplateBoxComponent.es6.js';
+import MapPipe                   from './util/MapPipe.es6.js';
+import SortPipe                  from './util/SortPipe.es6.js';
+
+import RectangleComponent from './RectangleComponent.es6.js';
 
 @Component({
-	selector: 'g[lyphTemplate]',
-	inputs:   ['model', 'creation'],//, 'x', 'y', 'width', 'height'
-	events:   ['dragging'],
+	selector: 'g[lyphTemplateBox]',
+	inputs:   ['creation', 'activeTool'],//, 'x', 'y', 'width', 'height'
 	directives: [
-		LayerTemplateBoxComponent
+		forwardRef(()=>LayerTemplateBoxComponent)
+	],
+	pipes: [
+		MapPipe,
+		SortPipe
 	],
 	template: `
 
 		<svg [attr.x]="x" [attr.y]="y">
+
 			<rect class         = " lyphTemplate "
 			      [attr.x]      = " 0            "
 			      [attr.y]      = " 0            "
 			      [attr.width]  = " width        "
 			      [attr.height] = " height       ">
 			</rect>
-			<g layerTemplate class="layerTemplate"
-			      *ngFor   = " #layer of layers; #i = index          "
-			      [model]  = " layer.model                           "
-			      [x]      = " 0                                     "
-			      [y]      = " (layers.length - i - 1) * layerHeight "
-			      [width]  = " width                                 "
-			      [height] = " layerHeight                           ">
+			<g layerTemplateBox class="layerTemplate"
+			      *ngFor       = " #layer of model.layers | map:layerById | sort:byPosition; #i = index "
+			      [model]      = " layer                                                                "
+			      [x]          = " 0                                                                    "
+			      [y]          = " (model.layers.length - i - 1) * layerHeight                          "
+			      [width]      = " width                                                                "
+			      [height]     = " layerHeight                                                          "
+			      [activeTool] = " activeTool                                                           ">
 			</g>
 			<rect class         = " axis                   "
 			      [attr.x]      = " 0                      "
@@ -37,9 +46,20 @@ import LayerTemplateBoxComponent from './LayerTemplateBoxComponent.es6.js';
 			      [attr.width]  = " width                  "
 			      [attr.height] = " axisThickness          ">
 			</rect>
-			<text class="axis minus" [attr.x]="1        " [attr.y]="height - axisThickness - 0.5">    −    </text>
-			<text class="axis plus " [attr.x]="width - 1" [attr.y]="height - axisThickness - 0.5">    +    </text>
-			<text class="axis label" [attr.x]="width / 2" [attr.y]="height - axisThickness - 0.5">{{model}}</text>
+			<defs>
+				<clipPath id="name-space">
+					<rect
+						[attr.x]      = " axisThickness              "
+						[attr.y]      = " height -     axisThickness "
+						[attr.width]  = " width  - 2 * axisThickness "
+						[attr.height] = " axisThickness              ">
+					</rect>
+				</clipPath>
+			</defs>
+			<text class="axis minus" [attr.x]="1        " [attr.y]="height - axisThickness - 0.5">                                     −       </text>
+			<text class="axis plus " [attr.x]="width - 1" [attr.y]="height - axisThickness - 0.5">                                     +       </text>
+			<text class="axis label" [attr.x]="width / 2" [attr.y]="height - axisThickness - 0.5" clip-path="url(#name-space)">{{ model.name }}</text>
+
 		</svg>
 
 	`,
@@ -57,14 +77,6 @@ import LayerTemplateBoxComponent from './LayerTemplateBoxComponent.es6.js';
 
 		rect.lyphTemplate {
 			pointer-events: all;
-		}
-
-		rect.layerTemplate {
-			fill: white;
-		}
-
-		svg.dragging > rect.layerTemplate {
-			pointer-events: visibleFill;
 		}
 
 		text.axis {
@@ -90,84 +102,95 @@ import LayerTemplateBoxComponent from './LayerTemplateBoxComponent.es6.js';
 
 	`]
 })
-export default class LyphTemplateBoxComponent {
+@Reflect.metadata('parameters', [,,,
+	[                        forwardRef(()=>LyphCanvasComponent      )],
+	[new OptionalMetadata(), forwardRef(()=>LayerTemplateBoxComponent)]
+])
+export default class LyphTemplateBoxComponent extends RectangleComponent {
 
 	/* model */
 	model;
-	layers = [];
-
-	/* variant geometry */
-	x;
-	y;
-	width;
-	height;
-
-	get minWidth()  { return 4                                           }
-	get minHeight() { return this.axisThickness + this.layers.length * 2 }
-
-	/* events */
-	init     = new EventEmitter;
-	dragging = new EventEmitter;
 
 	/* invariant geometry */
 	axisThickness = 15;
 
-	get layerHeight() { return (this.height - this.axisThickness) / this.layers.length }
-
-	constructor({nativeElement}: ElementRef, changeDetectorRef: ChangeDetectorRef) {
-		Object.assign(this, { nativeElement, changeDetectorRef });
+	/* constructor */
+	constructor(
+		{nativeElement}:           ElementRef,
+		changeDetectorRef:         ChangeDetectorRef,
+		resources:                 Resources,
+		lyphCanvasComponent:       LyphCanvasComponent,
+		layerTemplateBoxComponent: LayerTemplateBoxComponent
+	) {
+		super({
+			nativeElement,
+			changeDetectorRef,
+			resources,
+			root:   lyphCanvasComponent,
+			parent: layerTemplateBoxComponent || lyphCanvasComponent
+		});
+		this.layerById = this.layerById.bind(this);
 	}
+
+	get minWidth()    { return 2 * (this.axisThickness + 1)                                                     }
+	get minHeight()   { return this.axisThickness + (this.model ? this.model.layers.length * 2 : 5)             }
+	get layerHeight() { return (this.height - this.axisThickness) / (this.model ? this.model.layers.length : 5) }
+
+	// TODO: way to resize layers
 
 	ngOnInit() {
 
-		// TODO: resize layers
+		super.initSVG({
+			shell:     $(this.nativeElement),
+			container: $(this.nativeElement).children('svg').css({ overflow: 'visible' }),
+			rectangle: $(this.nativeElement).children('svg').children('rect.lyphTemplate')
+		});
 
 		/* Possibly unpack a creation object */
 		if (this.creation) {
-			/* starting geometry */
+			this.model  = this.creation.model;
 			this.x      = this.creation.x;
 			this.y      = this.creation.y;
 			this.width  = this.minWidth;
 			this.height = this.minHeight;
-			this.model  = this.creation.model;
 		}
 
-		/* set references */
-		this.element = $(this.nativeElement);
-		this.svg     = this.element.children('svg').css('overflow', 'visible');
-		this.rect    = this.svg.children('rect.lyphTemplate');
-
-		/* set back-references */
-		this.svg .data('component', this);
-		this.rect.data('component', this);
-
-		/* interact.js setup */
-		this.interactable = interact(this.rect[0]).draggable({
+		/* draggable */
+		this.interactable.draggable({
 			autoScroll: true,
+			//restrict: {
+			//	restriction: this.root.rectangle[0],
+			//	elementRect: { left: 0, right: 1, top: 0, bottom: 1 }
+			//},
 			onstart: (event) => {
 				event.stopPropagation();
-				this.dragging.next(true);
-				this.element.appendTo(this.element.parent()); // move to front
-			},
-			onend: () => {
-				this.dragging.next(false);
+				this.moveToFront();
 			},
 			onmove: (event) => {
 				this.x += event.dx;
 				this.y += event.dy;
 				this.changeDetectorRef.detectChanges();
 			}
-		}).resizable({
+		});
+
+		/* resizable */
+		this.interactable.resizable({
 			edges: { left: true, right: true, bottom: true, top: true },
+			//restrict: {
+			//	restriction: () => this.parent.rectangle[0],
+			//	elementRect: { left: 0, right: 1, top: 0, bottom: 1 }
+			//},
 			onstart: (event) => {
-				event.stopPropagation();
+				event.stopPropagation(); // TODO: necessary?
 			},
-			onmove: ({rect, edges}) => {
+			onmove: (event) => {
+				let {rect, edges} = event;
 				this.width  = Math.max(rect.width,  this.minWidth );
 				this.height = Math.max(rect.height, this.minHeight);
 				if (edges.left || edges.top) {
-					this.x      = rect.left - (edges.left ? this.width  - rect.width  : 0);
-					this.y      = rect.top  - (edges.top  ? this.height - rect.height : 0);
+					let parentRect = this.parent.rectangle[0].getBoundingClientRect();
+					this.x = rect.left - (edges.left ? this.width  - rect.width  : 0) - parentRect.left;
+					this.y = rect.top  - (edges.top  ? this.height - rect.height : 0) - parentRect.top;
 				}
 				this.changeDetectorRef.detectChanges();
 			}
@@ -176,17 +199,14 @@ export default class LyphTemplateBoxComponent {
 		/* Possibly resolve this component to the creation object */
 		if (this.creation) { this.creation.resolve(this) }
 
-
-		this.layers = [
-			{ model: '1' },
-			{ model: '2' },
-			{ model: '3' }
-		];
-
 	}
 
-	ngOnDestroy() {
-		this.interactable.unset();
+	layerById(id) {
+		return this.resources.getResource_sync('layerTemplates', id);
+	}
+
+	byPosition(layer1, layer2) {
+		return layer1.position - layer2.position;
 	}
 
 }
