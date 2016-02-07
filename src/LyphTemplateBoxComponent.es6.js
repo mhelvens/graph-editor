@@ -1,6 +1,5 @@
 import {Component, ElementRef, ChangeDetectorRef, forwardRef, OptionalMetadata} from 'angular2/core';
-import interact                                                 from './libs/interact.js';
-import $                                                        from 'jquery';
+import $                                                                        from 'jquery';
 
 import Resources                 from './util/Resources.es6.js';
 
@@ -25,7 +24,7 @@ import RectangleComponent from './RectangleComponent.es6.js';
 
 		<svg [attr.x]="x" [attr.y]="y">
 
-			<rect class         = " lyphTemplate "
+			<rect class="lyphTemplate"
 			      [attr.x]      = " 0            "
 			      [attr.y]      = " 0            "
 			      [attr.width]  = " width        "
@@ -40,7 +39,7 @@ import RectangleComponent from './RectangleComponent.es6.js';
 			      [height]     = " layerHeight                                                          "
 			      [activeTool] = " activeTool                                                           ">
 			</g>
-			<rect class         = " axis                   "
+			<rect class="axis"
 			      [attr.x]      = " 0                      "
 			      [attr.y]      = " height - axisThickness "
 			      [attr.width]  = " width                  "
@@ -56,8 +55,8 @@ import RectangleComponent from './RectangleComponent.es6.js';
 					</rect>
 				</clipPath>
 			</defs>
-			<text class="axis minus" [attr.x]="1        " [attr.y]="height - axisThickness - 0.5">                                     −       </text>
-			<text class="axis plus " [attr.x]="width - 1" [attr.y]="height - axisThickness - 0.5">                                     +       </text>
+			<text class="axis minus" [attr.x]="1        " [attr.y]="height - axisThickness - 0.5"> − </text>
+			<text class="axis plus " [attr.x]="width - 1" [attr.y]="height - axisThickness - 0.5"> + </text>
 			<text class="axis label" [attr.x]="width / 2" [attr.y]="height - axisThickness - 0.5" clip-path="url(#name-space)">{{ model.name }}</text>
 
 		</svg>
@@ -176,7 +175,6 @@ export default class LyphTemplateBoxComponent extends RectangleComponent {
 		/* resizable */
 		this.interactable.resizable({
 			edges: { left: true, right: true, bottom: true, top: true },
-			invert: 'reposition',
 			onstart: (event) => {
 				event.stopPropagation(); // TODO: necessary?
 			},

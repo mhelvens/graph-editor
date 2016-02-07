@@ -48,7 +48,6 @@ class BoxCreation {
 	`]
 })
 export default class LyphCanvasComponent extends RectangleComponent {
-
 	lyphTemplates = [];
 
 	added = new EventEmitter;
@@ -72,7 +71,7 @@ export default class LyphCanvasComponent extends RectangleComponent {
 
 			if (!this.activeTool) { return }
 
-			if (this.activeTool.form === 'box' && this.activeTool.type === 'LyphTemplate') {
+			if (this.activeTool.form === 'box' && this.activeTool.model.type === 'LyphTemplate') {
 				let canvasRect = this.rectangle[0].getBoundingClientRect();
 				this.lyphTemplates.push(new BoxCreation({
 					model: this.activeTool.model,

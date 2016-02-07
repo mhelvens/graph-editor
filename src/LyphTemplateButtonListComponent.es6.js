@@ -7,8 +7,8 @@ import Resources, {request} from './util/Resources.es6.js';
 
 @Component({
 	selector: 'lyph-template-button-list',
-	inputs: ['model'],
-	events: ['modelChange'],
+	inputs: ['activeTool'      ],
+	events: ['activeToolChange'],
 	pipes: [
 		require('./util/substring-pipe.es6.js').default
 	],
@@ -33,12 +33,12 @@ import Resources, {request} from './util/Resources.es6.js';
 			<!--<div style="visibility: hidden; height: 34px"></div>-->
 
 			<lyph-template
-				*ngFor      = " #lt of allResources['lyphTemplates'] | fieldSubstring:filterText:filter "
-				 class      = " list-group-item                                     "
-				[class.selected] = " model === lt "
-				[model]     = " lt                                               "
-				[highlight] = " filter                                              "
-				(click)     = " modelChange.next(lt)                           ">
+				*ngFor             = " #model of models | fieldSubstring:filterText:filter "
+				 class             = " list-group-item                                     "
+				[model]            = " model                                               "
+				[activeTool]       = " activeTool                                          "
+				(activeToolChange) = " activeToolChange.next($event)                       "
+				[highlight]        = " filter                                              ">
 	        </lyph-template>
 		</div>
 
@@ -54,12 +54,10 @@ import Resources, {request} from './util/Resources.es6.js';
 })
 export default class LyphTemplateButtonListComponent {
 
-	model       = null;
-	modelChange = new EventEmitter;
+	activeTool;
+	activeToolChange = new EventEmitter;
 
 	constructor(resources: Resources) {
-		this.resources = resources;
-		this.allResources = resources.getAllResources_sync();
 		this.models = resources.getAllResources_sync()['lyphTemplates'];
 	}
 

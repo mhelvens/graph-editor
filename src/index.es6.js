@@ -60,27 +60,31 @@ import './index.scss';
 					LyphTemplateButtonListComponent
 				],
 				template: `
-					<lyph-template-button-list [(model)]="selectedModel"></lyph-template-button-list>
-					<lyph-canvas [activeTool]=" activeTool " (added)="onArtefactAdded()"></lyph-canvas>
+
+					<pre>{{ activeTool | json }}</pre>
+
+					<lyph-template-button-list [(activeTool)]=" activeTool "></lyph-template-button-list>
+					<lyph-canvas [activeTool]=" activeTool " (added)=" onArtefactAdded() "></lyph-canvas>
 				`
 			})
 			class BootstrapComponent {
 
-				selectedForm  = 'box';
-				selectedType  = 'LyphTemplate';
-				selectedModel = null;
+				activeTool = null;
 
-				get activeTool() {
-					if (!this.selectedForm || !this.selectedType || !this.selectedModel) { return null }
-					return {
-						form:  this.selectedForm,
-						type:  this.selectedType,
-						model: this.selectedModel
-					};
-				}
+				//selectedForm  = 'box';
+				//selectedModel = null;
+
+				//get activeTool() {
+				//	if (!this.selectedForm || !this.selectedType || !this.selectedModel) { return null }
+				//	return {
+				//		form:  this.selectedForm,
+				//		type:  this.selectedType,
+				//		model: this.selectedModel
+				//	};
+				//}
 
 				onArtefactAdded() {
-					this.selectedModel = null;
+					this.activeTool = null;
 				}
 
 				ngOnInit() {
