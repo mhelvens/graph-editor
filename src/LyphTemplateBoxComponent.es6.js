@@ -158,10 +158,10 @@ export default class LyphTemplateBoxComponent extends RectangleComponent {
 		/* draggable */
 		this.interactable.draggable({
 			autoScroll: true,
-			//restrict: {
-			//	restriction: this.root.rectangle[0],
-			//	elementRect: { left: 0, right: 1, top: 0, bottom: 1 }
-			//},
+			restrict: {
+				restriction: this.root.rectangle[0],
+				elementRect: { left: 0, right: 1, top: 0, bottom: 1 }
+			},
 			onstart: (event) => {
 				event.stopPropagation();
 				this.moveToFront();
@@ -176,22 +176,38 @@ export default class LyphTemplateBoxComponent extends RectangleComponent {
 		/* resizable */
 		this.interactable.resizable({
 			edges: { left: true, right: true, bottom: true, top: true },
-			//restrict: {
-			//	restriction: () => this.parent.rectangle[0],
-			//	elementRect: { left: 0, right: 1, top: 0, bottom: 1 }
-			//},
+			invert: 'reposition',
 			onstart: (event) => {
 				event.stopPropagation(); // TODO: necessary?
 			},
 			onmove: (event) => {
 				let {rect, edges} = event;
+
+				let parentRect = this.parent.rectangle[0].getBoundingClientRect();
+
 				this.width  = Math.max(rect.width,  this.minWidth );
 				this.height = Math.max(rect.height, this.minHeight);
 				if (edges.left || edges.top) {
-					let parentRect = this.parent.rectangle[0].getBoundingClientRect();
 					this.x = rect.left - (edges.left ? this.width  - rect.width  : 0) - parentRect.left;
 					this.y = rect.top  - (edges.top  ? this.height - rect.height : 0) - parentRect.top;
 				}
+
+				// Manual 'restrict', because the builtin resize+restrict is a bit buggy; TODO
+				if (edges.left && this.x < 0) {
+					this.width += this.x;
+					this.x = 0;
+				}
+				if (edges.top && this.y < 0) {
+					this.height += this.y;
+					this.y = 0;
+				}
+				if (edges.right && this.x + this.width > parentRect.width) {
+					this.width = parentRect.width - this.x;
+				}
+				if (edges.bottom && this.y + this.height > parentRect.height) {
+					this.height = parentRect.height - this.y;
+				}
+
 				this.changeDetectorRef.detectChanges();
 			}
 		});

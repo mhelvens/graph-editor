@@ -55,4 +55,6 @@ export default class RectangleComponent {
 		}
 	}
 
+	// TODO: define minimal size based on content (template method pattern)
+
 }
