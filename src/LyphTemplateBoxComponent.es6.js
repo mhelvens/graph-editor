@@ -5,61 +5,73 @@ import Resources                 from './util/Resources.es6.js';
 
 import LyphCanvasComponent       from './LyphCanvasComponent.es6.js';
 import LayerTemplateBoxComponent from './LayerTemplateBoxComponent.es6.js';
+import DeleteClickerComponent    from './DeleteClickerComponent.es6.js';
 import MapPipe                   from './util/MapPipe.es6.js';
 import SortPipe                  from './util/SortPipe.es6.js';
 
-import RectangleComponent from './RectangleComponent.es6.js';
+import SVGComponent from './SVGComponent.es6.js';
 
 @Component({
 	selector: 'g[lyphTemplateBox]',
 	inputs:   ['creation', 'activeTool'],//, 'x', 'y', 'width', 'height'
 	directives: [
-		forwardRef(()=>LayerTemplateBoxComponent)
+		forwardRef(()=>LayerTemplateBoxComponent),
+		DeleteClickerComponent
 	],
 	pipes: [
 		MapPipe,
 		SortPipe
 	],
+	host: {
+		'(mouseenter)': ` mouseOver = true  `,
+		'(mouseleave)': ` mouseOver = false `
+	},
 	template: `
 
-		<svg [attr.x]="x" [attr.y]="y">
+		<svg:rect class="lyphTemplate"
+		      [attr.x]      = " x                 "
+		      [attr.y]      = " y                 "
+		      [attr.width]  = " width             "
+		      [attr.height] = " height            "
+	 	></svg:rect>
+		<svg:rect class="axis"
+		      [attr.x]      = " x                          "
+		      [attr.y]      = " y + height - axisThickness "
+		      [attr.width]  = " width                      "
+		      [attr.height] = " axisThickness              "
+		></svg:rect>
+		<svg:defs>
+			<clipPath id="name-space">
+				<rect
+					[attr.x]      = " x + axisThickness              "
+					[attr.y]      = " y + height -     axisThickness "
+					[attr.width]  = " width  - 2 * axisThickness     "
+					[attr.height] = " axisThickness                  "
+				></rect>
+			</clipPath>
+		</svg:defs>
+		<svg:text class="axis minus" [attr.x]="x + 1        " [attr.y]="y + height - axisThickness - 0.5"> − </svg:text>
+		<svg:text class="axis plus " [attr.x]="x + width - 1" [attr.y]="y + height - axisThickness - 0.5"> + </svg:text>
+		<svg:text class="axis label" [attr.x]="x + width / 2" [attr.y]="y + height - axisThickness - 0.5" clip-path="url(#name-space)">{{ model.name }}</svg:text>
 
-			<rect class="lyphTemplate"
-			      [attr.x]      = " 0            "
-			      [attr.y]      = " 0            "
-			      [attr.width]  = " width        "
-			      [attr.height] = " height       ">
-			</rect>
+		<svg:g class="child-container">
 			<g layerTemplateBox class="layerTemplate"
 			      *ngFor       = " #layer of model.layers | map:layerById | sort:byPosition; #i = index "
 			      [model]      = " layer                                                                "
-			      [x]          = " 0                                                                    "
-			      [y]          = " (model.layers.length - i - 1) * layerHeight                          "
+			      [x]          = " x                                                                    "
+			      [y]          = " y + (model.layers.length - i - 1) * layerHeight                      "
 			      [width]      = " width                                                                "
 			      [height]     = " layerHeight                                                          "
-			      [activeTool] = " activeTool                                                           ">
-			</g>
-			<rect class="axis"
-			      [attr.x]      = " 0                      "
-			      [attr.y]      = " height - axisThickness "
-			      [attr.width]  = " width                  "
-			      [attr.height] = " axisThickness          ">
-			</rect>
-			<defs>
-				<clipPath id="name-space">
-					<rect
-						[attr.x]      = " axisThickness              "
-						[attr.y]      = " height -     axisThickness "
-						[attr.width]  = " width  - 2 * axisThickness "
-						[attr.height] = " axisThickness              ">
-					</rect>
-				</clipPath>
-			</defs>
-			<text class="axis minus" [attr.x]="1        " [attr.y]="height - axisThickness - 0.5"> − </text>
-			<text class="axis plus " [attr.x]="width - 1" [attr.y]="height - axisThickness - 0.5"> + </text>
-			<text class="axis label" [attr.x]="width / 2" [attr.y]="height - axisThickness - 0.5" clip-path="url(#name-space)">{{ model.name }}</text>
-
-		</svg>
+			      [activeTool] = " activeTool                                                           "
+			></g>
+		</svg:g>
+		
+		<svg:g deleteClicker
+			*ngIf   = " mouseOver && !dragging && !resizing       "
+			[x]     = " x + width                                 "
+			[y]     = " y                                         "
+			(click) = " console.log('TODO: Delete lyph template') "
+		></svg:g>
 
 	`,
 	styles:  [`
@@ -105,10 +117,15 @@ import RectangleComponent from './RectangleComponent.es6.js';
 	[                        forwardRef(()=>LyphCanvasComponent      )],
 	[new OptionalMetadata(), forwardRef(()=>LayerTemplateBoxComponent)]
 ])
-export default class LyphTemplateBoxComponent extends RectangleComponent {
+export default class LyphTemplateBoxComponent extends SVGComponent {
 
 	/* model */
 	model;
+
+	/* state */
+	mouseOver = false;
+	dragging  = false;
+	resizing  = false;
 
 	/* invariant geometry */
 	axisThickness = 15;
@@ -125,7 +142,6 @@ export default class LyphTemplateBoxComponent extends RectangleComponent {
 			nativeElement,
 			changeDetectorRef,
 			resources,
-			root:   lyphCanvasComponent,
 			parent: layerTemplateBoxComponent || lyphCanvasComponent
 		});
 		this.layerById = this.layerById.bind(this);
@@ -141,8 +157,9 @@ export default class LyphTemplateBoxComponent extends RectangleComponent {
 
 		super.initSVG({
 			shell:     $(this.nativeElement),
-			container: $(this.nativeElement).children('svg').css({ overflow: 'visible' }),
-			rectangle: $(this.nativeElement).children('svg').children('rect.lyphTemplate')
+			container: $(this.nativeElement),
+			shape:     $(this.nativeElement).children('.lyphTemplate'),
+			childContainer: $(this.nativeElement).children('.child-container')
 		});
 
 		/* Possibly unpack a creation object */
@@ -150,15 +167,15 @@ export default class LyphTemplateBoxComponent extends RectangleComponent {
 			this.model  = this.creation.model;
 			this.x      = this.creation.x;
 			this.y      = this.creation.y;
-			this.width  = this.minWidth;
-			this.height = this.minHeight;
+			this.width  = Math.max(this.creation.width,  this.minWidth);
+			this.height = Math.max(this.creation.height, this.minHeight);
 		}
 
 		/* draggable */
 		this.interactable.draggable({
 			autoScroll: true,
 			restrict: {
-				restriction: this.root.rectangle[0],
+				restriction: this.root.shape[0],
 				elementRect: { left: 0, right: 1, top: 0, bottom: 1 }
 			},
 			onstart: (event) => {
@@ -166,9 +183,11 @@ export default class LyphTemplateBoxComponent extends RectangleComponent {
 				this.moveToFront();
 			},
 			onmove: (event) => {
-				this.x += event.dx;
-				this.y += event.dy;
-				this.changeDetectorRef.detectChanges();
+				this.traverse((c) => {
+					c.x += event.dx;
+					c.y += event.dy;
+				});
+				this.refresh();
 			}
 		});
 
@@ -181,7 +200,7 @@ export default class LyphTemplateBoxComponent extends RectangleComponent {
 			onmove: (event) => {
 				let {rect, edges} = event;
 
-				let parentRect = this.parent.rectangle[0].getBoundingClientRect();
+				let parentRect = this.parent.shape[0].getBoundingClientRect();
 
 				this.width  = Math.max(rect.width,  this.minWidth );
 				this.height = Math.max(rect.height, this.minHeight);
@@ -206,7 +225,7 @@ export default class LyphTemplateBoxComponent extends RectangleComponent {
 					this.height = parentRect.height - this.y;
 				}
 
-				this.changeDetectorRef.detectChanges();
+				this.refresh();
 			}
 		});
 

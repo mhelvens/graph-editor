@@ -6,6 +6,7 @@ import GoldenLayout                         from './libs/golden-layout.es6.js';
 
 /* local imports */
 import LyphCanvasComponent             from './LyphCanvasComponent.es6.js';
+import MiscToolButtonsListComponent    from './MiscToolButtonsListComponent.es6.js';
 import LyphTemplateButtonListComponent from './LyphTemplateButtonListComponent.es6.js';
 import Resources                       from './util/Resources.es6.js';
 
@@ -57,13 +58,13 @@ import './index.scss';
 				selector: 'bootstrap',
 				directives: [
 					LyphCanvasComponent,
+					MiscToolButtonsListComponent,
 					LyphTemplateButtonListComponent
 				],
 				template: `
 
-					<pre>{{ activeTool | json }}</pre>
-
 					<lyph-template-button-list [(activeTool)]=" activeTool "></lyph-template-button-list>
+					<misc-tool-buttons-list    [(activeTool)]=" activeTool "></misc-tool-buttons-list>
 					<lyph-canvas [activeTool]=" activeTool " (added)=" onArtefactAdded() "></lyph-canvas>
 				`
 			})
@@ -102,7 +103,8 @@ import './index.scss';
 
 
 	/* populating the panels */
-	$('bootstrap > lyph-template-button-list').detach().appendTo(leftPanel);
+	$('bootstrap > misc-tool-buttons-list')   .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
+	$('bootstrap > lyph-template-button-list').detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
 	$('bootstrap > lyph-canvas')              .detach().appendTo(mainPanel);
 
 

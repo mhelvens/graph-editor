@@ -45,6 +45,10 @@ import Resources, {request} from './util/Resources.es6.js';
 	`,
 	styles: [`
 
+		:host {
+			display: block;
+		}
+
 		lyph-template.selected {
 			border-left : solid 3px black !important;
 			border-right: solid 3px black !important;

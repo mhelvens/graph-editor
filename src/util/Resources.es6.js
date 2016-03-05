@@ -17,7 +17,12 @@ export default class Resources {
 
 	async [fetchResources](type) {
 		if (!this[models][type] && !this[modelLists][type]) {
-			this[modelLists][type] = await request.get(`/${type}`).then(v => v.body);
+			//this[modelLists][type] = await request.get(`/${type}`).then(v => v.body);
+			if (type === 'layerTemplates') {
+				this[modelLists][type] = require('../../layers.json');
+			} else {
+				this[modelLists][type] = require('../../lyphtemplates.json');
+			}
 			this[models][type] = {};
 			for (let model of this[modelLists][type]) {
 				this[models][type][model.id] = model;
@@ -27,7 +32,14 @@ export default class Resources {
 
 	async [fetchSpecificResources](type,ids) {
 		if (!this[models][type] && !this[modelLists][type]) {
-			this[modelLists][type] = await request.get(`/${type}/${withoutDuplicates(ids).join(',')}`).then(v => v.body);
+			//this[modelLists][type] = await request.get(`/${type}/${withoutDuplicates(ids).join(',')}`).then(v => v.body);
+			if (type === 'layerTemplates') {
+				this[modelLists][type] = require('../../layers.json');
+			} else {
+				this[modelLists][type] = require('../../lyphtemplates.json').filter((lt) => {
+					return lt.layers.length > 0;
+				});
+			}
 			this[models][type] = {};
 			for (let model of this[modelLists][type]) {
 				this[models][type][model.id] = model;

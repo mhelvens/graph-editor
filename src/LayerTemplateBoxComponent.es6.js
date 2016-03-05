@@ -5,26 +5,25 @@ import {getHsvGolden}                                           from 'golden-col
 
 import LyphCanvasComponent      from './LyphCanvasComponent.es6.js';
 import LyphTemplateBoxComponent from './LyphTemplateBoxComponent.es6.js';
+import NodeCircleComponent      from './NodeCircleComponent.es6.js';
 import Resources                from './util/Resources.es6.js';
 
-import RectangleComponent from './RectangleComponent.es6.js';
+import RectangleComponent from './SVGComponent.es6.js';
 
 @Component({
 	selector: 'g[layerTemplateBox]',
 	inputs:   ['model', 'x', 'y', 'width', 'height', 'activeTool'],
 	template: `
 
-		<svg [attr.x]="x" [attr.y]="y">
+		<svg:rect class="layerTemplate"
+		      [attr.x]      = " x                   "
+		      [attr.y]      = " y                   "
+		      [attr.width]  = " width               "
+		      [attr.height] = " height              "
+		      [style.fill]  = " color.toHexString() ">
+		</svg:rect>
 
-			<rect class="layerTemplate"
-			      [attr.x]      = " 0                   "
-			      [attr.y]      = " 0                   "
-			      [attr.width]  = " width               "
-			      [attr.height] = " height              "
-			      [style.fill]  = " color.toHexString() ">
-			</rect>
-
-		</svg>
+		<svg:g class="child-container"></svg:g>
 
 	`,
 	styles:  [`
@@ -62,11 +61,12 @@ export default class LayerTemplateBoxComponent extends RectangleComponent {
 	ngOnInit() {
 
 		super.initSVG({
-			shell:     $(this.nativeElement),
-			container: $(this.nativeElement).children('svg').css({ overflow: 'visible' }),
-			rectangle: $(this.nativeElement).children('svg').children('rect.layerTemplate')
+			shell:          $(this.nativeElement),
+			container:      $(this.nativeElement),
+			shape:          $(this.nativeElement).children('.layerTemplate'),
+			childContainer: $(this.nativeElement).children('.child-container')
 		});
-
+		
 		/* color */
 		this.color = getHsvGolden(0.8, 0.8); // TODO: retrieve these from the server
 
@@ -85,7 +85,7 @@ export default class LayerTemplateBoxComponent extends RectangleComponent {
 			ondrop: (event) => {
 				let other = $(event.relatedTarget).data('component');
 				other.setParent(this);
-				console.log(`'${other.model.name}' (${other.model.id}) dropped into '${this.parent.model.name}' (${this.model.id})`);
+				console.log(`'${other.model.name}' (${other.model.id}) dropped into '${this.parent.model.name}[${this.model.position}]' (${this.model.id})`);
 			},
 			ondropdeactivate: (event) => {
 				// remove active dropzone feedback

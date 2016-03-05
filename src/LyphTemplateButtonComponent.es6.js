@@ -17,8 +17,9 @@ const LINE_ICON      = require('./img/draw-line.png');
 	inputs: ['model', 'highlight', 'activeTool'],
 	events: ['activeToolChange'],
 	host: {
-		'[class.resource-view]': ` true       `,
-		'[title]':               ` model.name `
+		'[class.resource-view]': ` true                          `,
+		'[title]':               ` model.name                    `,
+		'[class.active]':        ` toolSelected('*', activeTool) `
 	},
 	template: `
 
@@ -35,10 +36,12 @@ const LINE_ICON      = require('./img/draw-line.png');
 
 		:host {
 			cursor: default;
+			color: black !important;
 		}
 
-		:host       { background-color: #fee !important }
-		:host:hover { background-color: #fcc !important }
+		:host        { background-color: #fee !important }
+		:host:hover  { background-color: #fcc !important }
+		:host.active { background-color: #fcc !important; font-style: italic; }
 
 		.text-content {
 			font-weight: bold;
@@ -87,9 +90,9 @@ export default class LyphTemplateButtonComponent {
 	activeToolChange = new EventEmitter;
 
 	toolSelected(form) {
-		return this.activeTool                      &&
-		       this.activeTool.model === this.model &&
-		       this.activeTool.form  === form;
+		return  this.activeTool                      &&
+		        this.activeTool.model === this.model &&
+		       (this.activeTool.form  === form || form === '*');
 	}
 
 	setTool(form) {

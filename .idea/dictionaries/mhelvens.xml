@@ -2,6 +2,8 @@
   <dictionary name="mhelvens">
     <words>
       <w>dropzone</w>
+      <w>interactable</w>
+      <w>jsviews</w>
       <w>ondragenter</w>
       <w>ondragleave</w>
       <w>ondrop</w>

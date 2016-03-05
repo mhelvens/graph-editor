@@ -7,6 +7,7 @@
 .icon-LocatedMeasure { background-image: url(img/icon-LocatedMeasure.png) !important }
 .icon-LyphTemplate   { background-image: url(img/icon-LyphTemplate.png)   !important }
 .icon-Correlation    { background-image: url(img/icon-Correlation.png)    !important }
+.icon-draw-line      { background-image: url(img/draw-line.png)           !important }
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -40,6 +41,18 @@ html, body {
 
 svg.dragging rect.layerTemplate {
 	pointer-events: visibleFill;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+div.inner-panel {
+	border: solid 1px black;
+	border-radius: 3px;
+	overflow: hidden;
+}
+
+div.inner-panel > * {
+	margin: -1px;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

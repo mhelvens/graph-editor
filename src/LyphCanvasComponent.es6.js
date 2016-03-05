@@ -3,8 +3,10 @@ import interact                                   from './libs/interact.js';
 import $                                          from 'jquery';
 
 import LyphTemplateBoxComponent from './LyphTemplateBoxComponent.es6.js';
+import NodeCircleComponent      from './NodeCircleComponent.es6.js';
+import ProcessComponent      from './ProcessComponent.es6.js';
 
-import RectangleComponent from './RectangleComponent.es6.js';
+import RectangleComponent from './SVGComponent.es6.js';
 
 class BoxCreation {
 	constructor(data, onResolved) {
@@ -20,15 +22,27 @@ class BoxCreation {
 @Component({
     selector:   'lyph-canvas',
     directives: [
-	    LyphTemplateBoxComponent
+	    LyphTemplateBoxComponent,
+	    NodeCircleComponent,
+	    ProcessComponent
     ],
 	inputs: ['activeTool'],
 	events: ['added'],
     template: `
 
-		<svg id="canvas">
+		<svg id="svg-canvas">
 
-			<g lyphTemplateBox *ngFor="#t of lyphTemplates" [creation]="t" [activeTool]="activeTool"></g>
+			<g class="svg-lyph-template-boxes">
+				<g lyphTemplateBox *ngFor="#t of lyphTemplates" [creation]="t" [activeTool]="activeTool"></g>
+			</g>
+
+			<g class="svg-process-edges">
+				<g processLine *ngFor="#t of processes" [creation]="t"></g>
+			</g>
+
+			<g class="svg-nodes">
+				<g nodeCircle *ngFor="#t of nodes" [creation]="t" [activeTool]="activeTool"></g>
+			</g>
 
 		</svg>
 
@@ -48,7 +62,10 @@ class BoxCreation {
 	`]
 })
 export default class LyphCanvasComponent extends RectangleComponent {
+
 	lyphTemplates = [];
+	nodes         = [];
+	processes     = [];
 
 	added = new EventEmitter;
 
@@ -62,8 +79,7 @@ export default class LyphCanvasComponent extends RectangleComponent {
 	ngOnInit() {
 
 		super.initSVG({
-			shell:     $(this.nativeElement),
-			container: $(this.nativeElement).children('svg').css({ overflow: 'visible' })
+			shell: $(this.nativeElement).children('svg').css({ overflow: 'visible' })
 		});
 
 		/* creating new artefacts by clicking down the mouse */
@@ -71,12 +87,15 @@ export default class LyphCanvasComponent extends RectangleComponent {
 
 			if (!this.activeTool) { return }
 
+			let canvasRect = this.shape[0].getBoundingClientRect();
+
 			if (this.activeTool.form === 'box' && this.activeTool.model.type === 'LyphTemplate') {
-				let canvasRect = this.rectangle[0].getBoundingClientRect();
 				this.lyphTemplates.push(new BoxCreation({
-					model: this.activeTool.model,
-					x: event.clientX - canvasRect.left,
-					y: event.clientY - canvasRect.top
+					model:  this.activeTool.model,
+					x:      event.clientX - canvasRect.left,
+					y:      event.clientY - canvasRect.top,
+					width:  100,
+					height: 100
 				}, (boxComponent) => {
 					event.interaction.start(
 						{
@@ -84,13 +103,63 @@ export default class LyphCanvasComponent extends RectangleComponent {
 							edges: { bottom: true, right: true }
 						},
 						boxComponent.interactable,
-						boxComponent.rectangle[0]
+						boxComponent.shape[0]
 					);
 					const onCreateEnd = () => {
 						this.added.next(this.activeTool);
-						boxComponent.interactable.off(onCreateEnd);
+						boxComponent.interactable.off('resizeend', onCreateEnd);
 					};
 					boxComponent.interactable.on('resizeend', onCreateEnd);
+				}));
+			} else if (this.activeTool.form === 'node') {
+				this.nodes.push(new BoxCreation({
+					model:  { id: -1, name: 'test node' }, // TODO: real node models
+					x:      event.clientX - canvasRect.left,
+					y:      event.clientY - canvasRect.top
+				}, (nodeComponent) => {
+					event.interaction.start(
+						{ name: 'drag' },
+						nodeComponent.interactable,
+						nodeComponent.shape[0]
+					);
+					const onCreateEnd = () => {
+						this.added.next(this.activeTool);
+						nodeComponent.interactable.off('dragend', onCreateEnd);
+					};
+					nodeComponent.interactable.on('dragend', onCreateEnd);
+				}));
+			} else if (this.activeTool.form === 'process') {
+				this.nodes.push(new BoxCreation({
+					model:  { id: -1, name: 'test node: from' }, // TODO: real node models
+					x:      event.clientX - canvasRect.left,
+					y:      event.clientY - canvasRect.top
+				}, (nodeComponent1) => {
+					this.nodes.push(new BoxCreation({
+						model:  { id: -1, name: 'test node: to' }, // TODO: real node models
+						x:      event.clientX - canvasRect.left,
+						y:      event.clientY - canvasRect.top
+					}, (nodeComponent2) => {
+						this.processes.push(new BoxCreation({
+							model:  { id: -1, name: 'test process' }, // TODO: real process models
+							x1:      event.clientX - canvasRect.left,
+							y1:      event.clientY - canvasRect.top,
+							x2:      event.clientX - canvasRect.left,
+							y2:      event.clientY - canvasRect.top
+						}, (processComponent) => {
+							nodeComponent1.processStarts.add(processComponent);
+							nodeComponent2.processEnds  .add(processComponent);
+							event.interaction.start(
+								{ name: 'drag' },
+								nodeComponent2.interactable,
+								nodeComponent2.shape[0]
+							);
+							const onCreateEnd = () => {
+								this.added.next(this.activeTool);
+								nodeComponent2.interactable.off('dragend', onCreateEnd);
+							};
+							nodeComponent2.interactable.on('dragend', onCreateEnd);
+						}));
+					}));
 				}));
 			}
 
@@ -98,7 +167,7 @@ export default class LyphCanvasComponent extends RectangleComponent {
 
 		/* dropping on the main canvas */
 		this.interactable.dropzone({
-			overlap: 1, // require whole rectangle to be inside
+			overlap: 'center',
 			ondropactivate: (event) => {
 				// add active dropzone feedback
 			},
@@ -119,6 +188,18 @@ export default class LyphCanvasComponent extends RectangleComponent {
 			}
 		});
 
+	}
+
+	childContainerElementFor(childComponent) {
+		if (childComponent instanceof LyphTemplateBoxComponent) {
+			return this.shell.children('.svg-lyph-template-boxes');
+		}
+		if (childComponent instanceof NodeCircleComponent) {
+			return this.shell.children('.svg-nodes');
+		}
+		if (childComponent instanceof ProcessComponent) {
+			return this.shell.children('.svg-process-edges');
+		}
 	}
 
 
