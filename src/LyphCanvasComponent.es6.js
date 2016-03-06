@@ -5,8 +5,14 @@ import $                                          from 'jquery';
 import LyphTemplateBoxComponent from './LyphTemplateBoxComponent.es6.js';
 import NodeCircleComponent      from './NodeCircleComponent.es6.js';
 import ProcessComponent      from './ProcessComponent.es6.js';
-
 import RectangleComponent from './SVGComponent.es6.js';
+
+
+
+/* new non-Angular solution */
+import NodeCircle from './new/NodeCircle.es6.js';
+
+
 
 class BoxCreation {
 	constructor(data, onResolved) {
@@ -41,7 +47,7 @@ class BoxCreation {
 			</g>
 
 			<g class="svg-nodes">
-				<g nodeCircle *ngFor="#t of nodes" [creation]="t" [activeTool]="activeTool"></g>
+				<!--<g nodeCircle *ngFor="#t of nodes" [creation]="t" [activeTool]="activeTool"></g>--><!-- old Angular solution; TODO: remove when new solution works -->
 			</g>
 
 		</svg>
@@ -112,22 +118,44 @@ export default class LyphCanvasComponent extends RectangleComponent {
 					boxComponent.interactable.on('resizeend', onCreateEnd);
 				}));
 			} else if (this.activeTool.form === 'node') {
-				this.nodes.push(new BoxCreation({
+				/* commented out Angular solution */
+				// this.nodes.push(new BoxCreation({
+				// 	model:  { id: -1, name: 'test node' }, // TODO: real node models
+				// 	x:      event.clientX - canvasRect.left,
+				// 	y:      event.clientY - canvasRect.top
+				// }, (nodeComponent) => {
+				// 	event.interaction.start(
+				// 		{ name: 'drag' },
+				// 		nodeComponent.interactable,
+				// 		nodeComponent.shape[0]
+				// 	);
+				// 	const onCreateEnd = () => {
+				// 		this.added.next(this.activeTool);
+				// 		nodeComponent.interactable.off('dragend', onCreateEnd);
+				// 	};
+				// 	nodeComponent.interactable.on('dragend', onCreateEnd);
+				// }));
+
+				/* new non-Angular solution */
+
+
+				console.log('(1)');
+				let node = new NodeCircle({
+					parent: this,
 					model:  { id: -1, name: 'test node' }, // TODO: real node models
 					x:      event.clientX - canvasRect.left,
 					y:      event.clientY - canvasRect.top
-				}, (nodeComponent) => {
-					event.interaction.start(
-						{ name: 'drag' },
-						nodeComponent.interactable,
-						nodeComponent.shape[0]
-					);
-					const onCreateEnd = () => {
-						this.added.next(this.activeTool);
-						nodeComponent.interactable.off('dragend', onCreateEnd);
-					};
-					nodeComponent.interactable.on('dragend', onCreateEnd);
-				}));
+				});
+				console.log('(2)', $(this.nativeElement).find('.svg-nodes'), node, node.element);
+				$(this.nativeElement).find('.svg-nodes').append(node.element);
+				console.log('(3)');
+				node.startDraggingBy(event).then(() => {
+					console.log('(3a)');
+					this.added.next(this.activeTool);
+					console.log('(3b)');
+				});
+				console.log('(4)');
+
 			} else if (this.activeTool.form === 'process') {
 				this.nodes.push(new BoxCreation({
 					model:  { id: -1, name: 'test node: from' }, // TODO: real node models
@@ -181,10 +209,10 @@ export default class LyphCanvasComponent extends RectangleComponent {
 				// remove the drop feedback style
 			},
 			ondrop: (event) => {
-				let other = $(event.relatedTarget).data('component');
-				other.setParent(this);
-
-				console.log(`'${other.model.name}' (${other.model.id}) dropped into the main canvas`);
+				// let other = $(event.relatedTarget).data('component');
+				// other.setParent(this);
+				//
+				// console.log(`'${other.model.name}' (${other.model.id}) dropped into the main canvas`);
 			}
 		});
 

@@ -52,7 +52,6 @@
     "golden-layout": "^1.0.10",
     "interact.js": "~1",
     "jquery": "~2",
-    "jsviews": "^0.9.73",
     "kefir": "~3",
     "lodash": "^4.6.1",
     "promise-defer": "~1",
