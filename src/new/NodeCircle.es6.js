@@ -1,229 +1,209 @@
-import {abstract, decorate, override} from 'core-decorators';
-import {memoize, pick, identity}      from 'lodash';
-import $                              from 'jquery';
-import interact                       from '../libs/interact.js';
+import {pick}   from 'lodash';
+import $        from 'jquery';
+import interact from '../libs/interact.js';
 
+import {boundBy, abs, sw} from '../util/misc.es6.js';
 
-function getElementRect(element) {
-	return element.getBoundingClientRect();
-}
-
-
-@abstract export class ValueTracker {
-
-	_eventTypes    = {};
-	_currentValues = {};
-
-	_eventType(name) {
-		if (!this._eventTypes[name]) {
-			this._eventTypes[name] = $.Callbacks();
-		}
-		return this._eventTypes[name];
-	}
-
-	on(name, cb) {
-		this._eventType(name).add(cb);
-		return this;
-	}
-
-	off(name, cb) {
-		this._eventType(name).remove(cb);
-		return this;
-	}
-
-	one(name, cb) {
-		return this.on(name, function oneCb(...args) {
-			this.off(name, oneCb);
-			cb(...args);
-		}.bind(this));
-	}
-
-	fire(name, ...args) {
-		this._currentValues[name] = args;
-		this._eventType(name).fire(...args);
-	}
-
-	observe(name, cb) {
-		this.on(name, cb);
-		if (typeof this._currentValues[name] !== 'undefined') {
-			cb(...this._currentValues[name]);
-		}
-	}
-
-	getVal(name) {
-		return this._currentValues[name];
-	}
-
-	setVal(name, ...args) {
-		this.fire(name, ...args);
-	}
-
-}
-
-
-@abstract export class SvgObject extends ValueTracker {
-
-	dragging = false;
-	resizing = false;
-
-	/* public */
-
-	get element() {
-		if (!this._element) {
-			this._element = this.createElement();
-			this._makeInteractable(this._element);
-		}
-		return this._element;
-	};
-
-	moveToFront() {
-		// for (let c = this; c !== c.root; c = c.parent) {
-		// 	this.element.detach().append(this.element.parent());
-		// } // TODO
-	}
-
-	startDraggingBy(event) {
-		let {handle, tracker} = this.draggable();
-		if (!handle) { handle = this.element              }
-		else         { handle = this.element.find(handle) }
-		if (!tracker) { tracker = handle                     }
-		else          { tracker = this.element.find(tracker) }
-		interact(tracker[0]).rectChecker(getElementRect);
-		event.interaction.start(
-			{ name: 'drag' },
-			interact(tracker[0]),
-			tracker[0]
-		);
-		return new Promise((resolve) => {
-			interact(tracker[0]).on('dragend', function onCreateEnd() {
-				interact(tracker[0]).off('dragend', onCreateEnd);
-				resolve();
-			});
-		});
-	}
-
-	/* private */
-
-	_makeInteractable(mainElement) {
-		// TODO: set dragging and resizing flags here, not in the subclasses
-		if (this.resizable) {
-			let {handle, ...resizableOptions} = this.resizable();
-			if (!handle) { handle = mainElement              }
-			else         { handle = mainElement.find(handle) }
-			interact(handle[0]).resizable(resizableOptions);
-		}
-		if (this.draggable) {
-			let {handle, tracker, ...draggableOptions} = this.draggable();
-			if (!handle) { handle = mainElement              }
-			else         { handle = mainElement.find(handle) }
-			if (!tracker) { tracker = handle                    }
-			else          { tracker = mainElement.find(tracker) }
-			interact(handle[0]).on('down', (event) => {
-				event.interaction.start(
-					{ name: 'drag' },
-					interact(tracker[0]),
-					tracker[0]
-				);
-			});
-			interact(tracker[0]).draggable(draggableOptions);
-		}
-	};
-
-}
-
-
-@abstract export class SvgEntity extends SvgObject {
-
-	model;
-	root;
-	parent;
-
-	constructor(options) {
-		super(options);
-		Object.assign(this,
-			{ root: options.parent ? options.parent.root : this },
-			pick(options, ['model', 'parent'])
-		);
-	}
-
-}
+import SvgEntity        from './SvgEntity.es6.js';
+import LayerTemplateBox from './LayerTemplateBox.es6.js';
+import ProcessLine       from './ProcessLine.es6.js';
+import CanonicalTreeLine from './CanonicalTreeLine.es6.js';
 
 
 export default class NodeCircle extends SvgEntity {
 
+	static IDLE_RADIUS     = 10;
+	static DRAGGING_RADIUS = 16;
+	static SNAP_DISTANCE   = 20;
+
 	get x()  { return this.getVal('x') }
-	set x(v) { this.setVal('x', parseInt(v, 10))  }
+	set x(v) { this.setVal('x', v)     }
 
 	get y()  { return this.getVal('y') }
-	set y(v) { this.setVal('y', parseInt(v, 10))  }
+	set y(v) { this.setVal('y', v)     }
+
+	get hovering()  { return this.getVal('hovering') }
+	set hovering(v) { this.setVal('hovering', v)     }
 
 	constructor(options) {
 		super(options);
-		Object.assign(this, pick(options, ['x', 'y']));
+		Object.assign(this, pick(options, 'x', 'y'), {
+			hovering: false
+		});
 	}
 
 	createElement() {
-		let result = $(`
-			<svg x="0" y="0" style="overflow: visible">
-				<circle class="center" cx="0" cy="0" r="0.5"></circle>
-				<circle class="node"   cx="0" cy="0" r="4"></circle>
-				<g      class="deleter"></g><!-- TODO -->
-			</svg>
+		/* main HTML */
+		let result = $.svg(`
+			<g>
+				<circle class="node center" r="0.1"></circle>
+				<circle class="node shape"></circle>
+				<g      class="delete-clicker"></g>
+			</g>
 		`);
-		this.observe('x', (x) => { result.attr('x', x) });
-		this.observe('y', (y) => { result.attr('y', y) });
+
+		/* extract and style important elements */
+		const center = result.children('.node.center');
+		const shape = result.children('.node.shape').css({
+			stroke: 'black',
+			fill:   'white'
+		});
+
+		/* observe values and alter view accordingly */
+		shape.mouseenter(() => { this.hovering = true  });
+		shape.mouseleave(() => { this.hovering = false });
+		this.observe('x', () => {
+			center.attr('cx', this.x);
+			shape .attr('cx', this.x);
+		});
+		this.observe('y', () => {
+			center.attr('cy', this.y);
+			shape .attr('cy', this.y);
+		});
+		this.observe('dragging', () => {
+			shape.attr('r', this.dragging
+				? NodeCircle.DRAGGING_RADIUS
+				: NodeCircle.IDLE_RADIUS
+			);
+		});
+
+		/* delete button */
+		let deleteClicker = this.createDeleteClicker();
+		deleteClicker.element.appendTo(result.children('.delete-clicker'));
+		this.observeExpressions([[deleteClicker.element, {
+			x: [['x'], (x) => x + 12 ],
+			y: [['y'], (y) => y - 12 ]
+		}]], {
+			setter(element, key, val) { element.attr(key, val) },
+			ready: isFinite
+		});
+		const showHideDeleteClicker = () => {
+			if (this.hovering || deleteClicker.hovering) {
+				deleteClicker.element.show();
+			} else {
+				deleteClicker.element.hide();
+			}
+		};
+		this         .observe('hovering', showHideDeleteClicker);
+		deleteClicker.observe('hovering', showHideDeleteClicker);
+
+		/* drawing process with a tool */
+		interact(shape[0]).on('down', async (event) => {
+
+			if (!this.root.activeTool) { return }
+
+			event.stopPropagation();
+
+			let mouseCoords = this.pageToCanvas({ x: event.pageX, y: event.pageY});
+
+			this.root.activeTool.result = await sw(this.root.activeTool.form)({
+				'process':             ()=> this.deployTool_ProcessLine    (event, mouseCoords),
+				'canonical-tree-line': ()=> this.deployTool_CanonicalTree  (event, mouseCoords)
+			});
+
+			this.root.added.next(this.activeTool);
+
+		});
+		this.observe('hovering', () => {
+			if (this.root.activeTool) {
+				shape.css('cursor', 'pointer');
+			} else {
+				shape.css('cursor', 'grab');
+				shape.css('cursor', 'grabbing');
+				shape.css('cursor', 'hand');
+			}
+		});
+
 		return result;
 	}
 
+	deployTool_ProcessLine(event, {x, y}) {
+		let process = new ProcessLine({
+			parent: this.root,
+			model : { id: -1, name: 'test process' }, // TODO: real process models
+			source: this,
+			target: new NodeCircle({
+				parent: this.parent,
+				model : { id: -1, name: 'test target node' }, // TODO: real node models
+				x, y
+			})
+		});
+		this.root.element.find('.svg-nodes').append(process.target.element);
+		this.root.element.find('.svg-process-edges').append(process.element);
+		return process.target.startDraggingBy(event);
+	};
+
+	deployTool_CanonicalTree(event, {x, y}) {
+		let process = new CanonicalTreeLine({
+			parent: this.root,
+			model : { id: -1, name: 'test canonical tree' }, // TODO: real process models
+			source: this,
+			target: new NodeCircle({
+				parent: this.parent,
+				model : { id: -1, name: 'test target node' }, // TODO: real node models
+				x, y
+			})
+		});
+		this.root.element.find('.svg-nodes').append(process.target.element);
+		this.root.element.find('.svg-process-edges').append(process.element);
+		return process.target.startDraggingBy(event);
+	};
+
 	draggable() {
-		let draggingX,
-		    draggingY;
+		let raw, parentRect;
 		return {
-			handle:  '.node',
-			tracker: '.center',
+			handle:  'circle.node.shape',
+			// tracker: '.node.center',
 			autoScroll: true,
-			restrict: {
-				restriction: this.root.shape[0],
-				elementRect: { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5 }
-			},
 			onstart: (event) => {
 				event.stopPropagation();
+
+				/* dragged things stay in front of other things */
 				this.moveToFront();
-				this.dragging = true;
 
-				/* to maintain unsnapped coordinates */
-				draggingX = parseInt(this.x, 10);
-				draggingY = parseInt(this.y, 10);
+				/* initialize interaction-local variables */
+				raw        = this.getVals('x', 'y');
+				parentRect = this.parent.boundingBox();
 			},
-			onmove: (event) => {
-				draggingX += event.dx;
-				draggingY += event.dy;
+			onmove: ({dx, dy}) => {
 
-				/* commented out snapping solution; TODO: fix for new non-Angular approach */
-				// /* snap to nearby borders */
-				// let dX = 99999;
-				// let dY = 99999;
-				// this.root.traverse(LayerTemplateBoxComponent, (layer) => {
-				// 	if (layer.y < draggingY && draggingY < layer.y + layer.height) {
-				// 		if (Math.abs(layer.x               - draggingX) < Math.abs(dX)) { dX = layer.x               - draggingX + 0.5 }
-				// 		if (Math.abs(layer.x + layer.width - draggingX) < Math.abs(dX)) { dX = layer.x + layer.width - draggingX - 0.5 }
-				// 	}
-				// 	if (layer.x < draggingX && draggingX < layer.x + layer.width) {
-				// 		if (                              Math.abs(layer.y                - draggingY) < Math.abs(dY)) { dY = layer.y                - draggingY + 0.5 }
-				// 		if (layer.model.position !== 1 && Math.abs(layer.y + layer.height - draggingY) < Math.abs(dY)) { dY = layer.y + layer.height - draggingY - 0.5 }
-				// 	}
-				// });
-				// if (Math.abs(dX) <= Math.abs(dY) && Math.abs(dX) <= 10) { this.x = draggingX + dX } else { this.x = draggingX }
-				// if (Math.abs(dY) <  Math.abs(dX) && Math.abs(dY) <= 10) { this.y = draggingY + dY } else { this.y = draggingY }
+				/* update raw coordinates */
+				raw.x += dx;
+				raw.y += dy;
 
-				/* temporary no-snapping solution */
-				this.x = draggingX;
-				this.y = draggingY;
-			},
-			onend: (event) => {
-				this.dragging = false;
+				/* initialize visible coordinates */
+				let visible = { ...raw };
+
+				/* snapping correction */
+				let snap = { x: Infinity, y: Infinity };
+				this.root.traverse(LayerTemplateBox, (layer) => {
+					if (layer.y < raw.y && raw.y < layer.y + layer.height) {
+						if (abs(layer.x                - raw.x) < abs(snap.x)) { snap.x = layer.x                - raw.x + 0.5 }
+						if (abs(layer.x + layer.width  - raw.x) < abs(snap.x)) { snap.x = layer.x + layer.width  - raw.x - 0.5 }
+					}
+					if (layer.x < raw.x && raw.x < layer.x + layer.width) {
+						if (abs(layer.y                - raw.y) < abs(snap.y)) { snap.y = layer.y                - raw.y + 0.5 }
+						if (abs(layer.y + layer.height - raw.y) < abs(snap.y)) { snap.y = layer.y + layer.height - raw.y - 0.5 }
+					}
+				});
+				if (abs(snap.x) <= abs(snap.y) && abs(snap.x) <= NodeCircle.SNAP_DISTANCE) { visible.x += snap.x }
+				if (abs(snap.y) <  abs(snap.x) && abs(snap.y) <= NodeCircle.SNAP_DISTANCE) { visible.y += snap.y }
+
+				/* restriction correction */
+				visible.x = boundBy( parentRect.left, parentRect.left + parentRect.width  )( visible.x );
+				visible.y = boundBy( parentRect.top,  parentRect.top  + parentRect.height )( visible.y );
+
+				/* set visible (x, y) based on snapping and restriction */
+				this.setVals(visible);
 			}
 		};
+	}
+
+	innerToOuter({x, y}) {
+		return super.innerToOuter({
+			x: this.x + x,
+			y: this.y + y
+		});
 	}
 
 }

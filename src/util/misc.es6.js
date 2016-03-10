@@ -72,4 +72,14 @@ export const noWhitespaceBetweenTags = (strings, ...values) => {
 	return result.join('');
 };
 
-export const sw = (val) => (map) => ( (val in map) ? map[val] : map.default );
+export const sw = (val) => (map) => {
+	let result = ( (val in map) ? map[val] : map.default );
+	if (typeof result === 'function') { result = result() }
+	return result;
+};
+
+export const boundBy = (min, max) => (val) => Math.max(min, Math.min(max, val));
+
+export const min = Math.min;
+export const max = Math.max;
+export const abs = Math.abs;

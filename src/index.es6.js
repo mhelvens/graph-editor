@@ -5,10 +5,12 @@ import $                                    from 'jquery';
 import GoldenLayout                         from './libs/golden-layout.es6.js';
 
 /* local imports */
-import LyphCanvasComponent             from './LyphCanvasComponent.es6.js';
-import MiscToolButtonsListComponent    from './MiscToolButtonsListComponent.es6.js';
-import LyphTemplateButtonListComponent from './LyphTemplateButtonListComponent.es6.js';
-import Resources                       from './util/Resources.es6.js';
+import LyphCanvasComponent              from './LyphCanvasComponent.es6.js';
+import MiscToolButtonsListComponent     from './MiscToolButtonsListComponent.es6.js';
+import ProcessTypeButtonListComponent   from './ProcessTypeButtonListComponent.es6.js';
+import LyphTemplateButtonListComponent  from './LyphTemplateButtonListComponent.es6.js';
+import CanonicalTreeButtonListComponent from './CanonicalTreeButtonListComponent.es6.js';
+import Resources                        from './util/Resources.es6.js';
 
 /* styling */
 import './index.scss';
@@ -59,30 +61,23 @@ import './index.scss';
 				directives: [
 					LyphCanvasComponent,
 					MiscToolButtonsListComponent,
-					LyphTemplateButtonListComponent
+					ProcessTypeButtonListComponent,
+					LyphTemplateButtonListComponent,
+					CanonicalTreeButtonListComponent
 				],
 				template: `
 
-					<lyph-template-button-list [(activeTool)]=" activeTool "></lyph-template-button-list>
-					<misc-tool-buttons-list    [(activeTool)]=" activeTool "></misc-tool-buttons-list>
+					<misc-tool-buttons-list     [(activeTool)]=" activeTool "></misc-tool-buttons-list>
+					<process-type-button-list   [(activeTool)]=" activeTool "></process-type-button-list>
+					<lyph-template-button-list  [(activeTool)]=" activeTool "></lyph-template-button-list>
+					<canonical-tree-button-list [(activeTool)]=" activeTool "></canonical-tree-button-list>
 					<lyph-canvas [activeTool]=" activeTool " (added)=" onArtefactAdded() "></lyph-canvas>
+					
 				`
 			})
 			class BootstrapComponent {
 
 				activeTool = null;
-
-				//selectedForm  = 'box';
-				//selectedModel = null;
-
-				//get activeTool() {
-				//	if (!this.selectedForm || !this.selectedType || !this.selectedModel) { return null }
-				//	return {
-				//		form:  this.selectedForm,
-				//		type:  this.selectedType,
-				//		model: this.selectedModel
-				//	};
-				//}
 
 				onArtefactAdded() {
 					this.activeTool = null;
@@ -103,9 +98,12 @@ import './index.scss';
 
 
 	/* populating the panels */
-	$('bootstrap > misc-tool-buttons-list')   .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
-	$('bootstrap > lyph-template-button-list').detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
-	$('bootstrap > lyph-canvas')              .detach().appendTo(mainPanel);
+	leftPanel.css('overflow-y', 'scroll');
+	$('bootstrap > misc-tool-buttons-list')    .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
+	$('bootstrap > process-type-button-list')  .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
+	$('bootstrap > lyph-template-button-list') .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
+	$('bootstrap > canonical-tree-button-list').detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
+	$('bootstrap > lyph-canvas')               .detach().appendTo(mainPanel);
 
 
 	/* Done */

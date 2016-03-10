@@ -21,12 +21,12 @@ const NODE_ICON      = require('./img/draw-node.png');
 				</div>
 	        </div>
 
-			<div class="list-group-item resource-view" [class.active]=" toolSelected('process', activeTool) ">
+			<!--<div class="list-group-item resource-view" [class.active]=" toolSelected('process', activeTool) ">
 				<div class="text-content" style="text-align: left">Process</div>
 				<div class="buttons">
 					<div class="button line" [class.active]=" toolSelected('process', activeTool) " (click)=" activeToolChange.next({form:'process'}) "></div>
 				</div>
-	        </div>
+	        </div>-->
 
 		</div>
 

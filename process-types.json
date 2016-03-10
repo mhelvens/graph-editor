@@ -1,0 +1,12 @@
+[
+  {
+    "id": -1,
+    "name": "Neural Process",
+    "color": "#08d"
+  },
+  {
+    "id": -2,
+    "name": "Vascular Process",
+    "color": "#d00"
+  }
+]

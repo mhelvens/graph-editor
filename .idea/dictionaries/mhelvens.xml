@@ -1,9 +1,12 @@
 <component name="ProjectDictionaryState">
   <dictionary name="mhelvens">
     <words>
+      <w>artefacts</w>
+      <w>coords</w>
       <w>dropzone</w>
       <w>interactable</w>
       <w>jsviews</w>
+      <w>lyph</w>
       <w>ondragenter</w>
       <w>ondragleave</w>
       <w>ondrop</w>
@@ -15,6 +18,7 @@
       <w>resizeend</w>
       <w>resizemove</w>
       <w>superagent</w>
+      <w>vals</w>
     </words>
   </dictionary>
 </component>
