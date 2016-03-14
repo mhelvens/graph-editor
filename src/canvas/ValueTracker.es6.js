@@ -1,84 +1,102 @@
-import $ from 'jquery';
-import Kefir from '../libs/kefir.es6.js';
-import {isUndefined, isFunction, isPlainObject, isArray} from 'lodash';
-import {assert} from '../util/misc.es6.js';
+import {isUndefined, isFunction, isPlainObject, isArray, set} from 'lodash';
+import Kefir                                                  from '../libs/kefir.es6.js';
+import {assert}                                               from '../util/misc.es6.js';
 
 
+/* symbols to private members */
+const events     = Symbol('events');
+const properties = Symbol('properties');
+const initialize = Symbol('initialize');
 
 
-/** {@export}{@class KefirSignalHandler}
+/**
  * Use this as a subclass (or just mix it in) to provide support for
  * events and observable properties through Kefir.js.
+ *
+ * @export
+ * @class ValueTracker
  */
-export default class KefirSignalHandler {
+export default class ValueTracker {
 
-	constructor() {
-		this._events = {};
-		this._properties = {};
+	[initialize]() {
+		if (this[events]) { return }
+		this[events]     = {};
+		this[properties] = {};
 		this.newEvent('destroy');
+		for (let [key, options] of Object.entries(this.constructor[events]     || {})) { this.newEvent   (key, options) }
+		for (let [key, options] of Object.entries(this.constructor[properties] || {})) { this.newProperty(key, options) }
 	}
 
-	/** {@public}{@method}
+	/**
 	 * Declares a new event stream for this object.
 	 *
+	 * @public
+	 * @method
 	 * @param  {String}        name    - the name of the event, used to trigger or subscribe to it
 	 * @param  {Kefir.Stream} [source] - another event stream to automatically trigger this event
-	 *
 	 * @return {Kefir.Bus} - the created event stream
 	 */
 	newEvent(name, {source} = {}) {
+		this[initialize]();
 
 		/* is the event name already taken? */
-		assert(() => !this._events[name],
+		assert(() => !this[events][name],
 			`There is already an event '${name}' on this object.`);
-		assert(() => !this._properties[name],
+		assert(() => !this[properties][name],
 			`There is already a property '${name}' on this object.`);
 
 		/* define the event stream */
 		let bus = new Kefir.Bus();
 		if (source) { bus.plug(source) }
-		return this._events[name] = bus;
+
+		return this[events][name] = bus;
 
 	}
 
-
-	/** {@public}{@method}
+	/**
 	 * Retrieve an event stream by name. If the name of a property is given, a stream
 	 * based on changes to that property is returned.
 	 *
+	 * @public
+	 * @method
 	 * @param  {String}  name - the name of the event stream to retrieve
 	 * @return {Kefir.Stream} - the event stream associated with the given name
 	 */
 	e(name) {
+		this[initialize]();
 
 		/* does the event exist? */
-		assert(() => this._events[name],
+		assert(() => this[events][name],
 			`There is no event '${name}' on this object.`);
 
 		/* return it */
-		return this._events[name];
+		return this[events][name];
 
 	}
 
-
-	/** {@public}{@method}
+	/**
 	 * Retrieve a property by name.
 	 *
+	 * @public
+	 * @method
 	 * @param  {String} name - the name of the property to retrieve
 	 * @return {Kefir.Property} - the property associated with the given name
 	 */
 	p(name) {
+		this[initialize]();
+
 		if (isArray(name)) {
-			return Kefir.combine(name.map(n => this._properties[n]));
+			return Kefir.combine(name.map(n => this[properties][n]));
 		} else {
-			return this._properties[name];
+			return this[properties][name];
 		}
 	}
 
-
-	/** {@public}{@method}
+	/**
 	 * This method defines a new property on this object.
 	 *
+	 * @public
+	 * @method
 	 * @param  {String}                   name           - the name of the event stream to retrieve
 	 * @param  {Boolean}                 [settable=true] - whether the value can be manually set
 	 * @param  {*}                       [initial]       - the initial value of this property
@@ -88,11 +106,12 @@ export default class KefirSignalHandler {
 	 * @return {Kefir.Property} - the property associated with the given name
 	 */
 	newProperty(name, {settable, initial, isEqual, isValid = ()=>true} = {}) {
+		this[initialize]();
 
 		/* is the property name already taken? */
-		assert(() => !this._events[name],
+		assert(() => !this[events][name],
 			`There is already an event '${name}' on this object.`);
-		assert(() => !this._properties[name],
+		assert(() => !this[properties][name],
 			`There is already a property '${name}' on this object.`);
 
 		/* default value for 'settable' */
@@ -103,7 +122,8 @@ export default class KefirSignalHandler {
 
 		/* define the property itself, and give it additional methods */
 		let hasInitial = (!isUndefined(initial) && isValid(initial));
-		let property = this._properties[name] = bus.toProperty(hasInitial ? (()=>initial) : undefined).skipDuplicates(isEqual);
+		let property = this[events][name] = this[properties][name] =
+			bus.toProperty(hasInitial ? (()=>initial) : undefined).skipDuplicates(isEqual);
 
 		/* maintain current value */
 		let currentValue;
@@ -111,32 +131,37 @@ export default class KefirSignalHandler {
 
 		/* additional property methods */
 		let plugged = new Map;
-		property.plug = (observable) => {
-			let filteredObservable = isValid ? observable.filter(isValid) : observable;
-			plugged.set(observable, filteredObservable);
-			bus.plug(filteredObservable);
-			return property;
-		};
-		property.unplug = (observable) => {
-			bus.unplug(plugged.get(observable));
-			plugged.delete(observable);
-			return property;
-		};
-		property.get = () => currentValue;
-		if (settable) {
-			property.set = (value) => {
+		Object.assign(property, {
+
+			plug(observable) {
+				let filteredObservable = isValid ? observable.filter(isValid) : observable;
+				plugged.set(observable, filteredObservable);
+				bus.plug(filteredObservable);
+				return property;
+			},
+
+			unplug(observable) {
+				bus.unplug(plugged.get(observable));
+				plugged.delete(observable);
+				return property;
+			},
+
+			get() { return currentValue },
+
+			set: settable ? ((value) => {
 				if (!isValid || isValid(value)) {
 					bus.emit(value);
 				}
 				return property;
-			};
-		}
+			}) : undefined
 
-		/* add the property to the object interface */
-		Object.defineProperty(this, name, {
-			get: property.get,
-			set: settable ? property.set : undefined
 		});
+
+		// /* add the property to the object interface */
+		// Object.defineProperty(this, name, {
+		// 	get: property.get,
+		// 	set: settable ? property.set : undefined
+		// });
 
 		/* make the property active; it doesn't work if this isn't done (the nature of Kefir.js) */
 		property.run();
@@ -147,31 +172,37 @@ export default class KefirSignalHandler {
 
 	}
 
-
-	/** {@public}{@method}
+	/**
 	 * Trigger an event for all subscribers.
 	 *
+	 * @public
+	 * @method
 	 * @param {String} name  - the name of the event stream to trigger
 	 * @param {*}      value - the value to attach to the event
 	 */
 	trigger(name, value) {
+		this[initialize]();
 
 		/* does the event stream exist? */
-		assert(() => this._events[name],
+		assert(() => this[events][name],
 			`There is no event '${name}' on this object.`);
 
 		/* push the value to the stream */
-		this._events[name].emit(value);
+		this[events][name].emit(value);
 
 	}
-	
+
 	get(key) {
+		this[initialize]();
+
 		return isArray(key)
 			? key.map(k => this.get(k))
 			: this.p(key).get();
 	}
 
 	set(key, value) {
+		this[initialize]();
+		
 		if (isPlainObject(key) && isUndefined(value)) {
 			for (let [k, v] of Object.entries(key)) {
 				this.set(k, v);
@@ -181,4 +212,21 @@ export default class KefirSignalHandler {
 		}
 	}
 
+};
+
+export const property = (options = {}) => (target, key) => {
+	set(target, ['constructor', properties, key], options);
+	let {settable = true} = options;
+	return Object.assign({
+		get() { return this.p(key).get() }
+	}, settable && {
+		set(value) { this.p(key).set(value) }
+	});
+};
+
+export const event = (options = {}) => (target, key) => {
+	set(target, ['constructor', events, key], options);
+	return {
+		get() { return this.e(key) }
+	};
 };

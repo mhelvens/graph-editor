@@ -3,28 +3,36 @@ import Kefir                                   from '../libs/kefir.es6.js';
 import $                                       from '../libs/jquery.es6.js';
 
 import {assert, boundBy} from '../util/misc.es6.js';
-import Resources         from '../util/Resources.es6.js';
+import Resources         from '../Resources.es6.js';
+
+import {property}        from './ValueTracker.es6.js';
 import SvgEntity         from './SvgEntity.es6.js';
 import LayerTemplateBox  from './LayerTemplateBox.es6.js';
 
 
 export default class LyphTemplateBox extends SvgEntity {
 
-	get axisThickness() { return 15 }
-
-	get minWidth ()   { return 2 * (this.axisThickness + 1)                                         }
-	get minHeight()   { return this.axisThickness + (this.model ? this.model.layers.length * 2 : 5) }
+	get axisThickness() { return 15                                                                   }
+	get minWidth     () { return 2 * (this.axisThickness + 1)                                         }
+	get minHeight    () { return this.axisThickness + (this.model ? this.model.layers.length * 2 : 5) }
 
 	layerTemplateBoxes = [];
+
+	@property({isValid: isFinite}) x;
+	@property({isValid: isFinite}) y;
+	@property({isValid: isFinite}) width;
+	@property({isValid: isFinite}) height;
 
 	constructor(options) {
 		super(options);
 
-		/* properties */
-		this.newProperty('x',        { initial: options.x,      isValid: isFinite });
-		this.newProperty('y',        { initial: options.y,      isValid: isFinite });
-		this.newProperty('width',    { initial: options.width,  isValid: isFinite });
-		this.newProperty('height',   { initial: options.height, isValid: isFinite });
+		Object.assign(this, pick(options, 'x', 'y', 'width', 'height'));
+
+		// /* properties */
+		// this.newProperty('x',        { initial: options.x,      isValid: isFinite });
+		// this.newProperty('y',        { initial: options.y,      isValid: isFinite });
+		// this.newProperty('width',    { initial: options.width,  isValid: isFinite });
+		// this.newProperty('height',   { initial: options.height, isValid: isFinite });
 
 		/* create the layers */
 		let resources = new Resources;
@@ -47,9 +55,9 @@ export default class LyphTemplateBox extends SvgEntity {
 						<rect class="name-space" height="${this.axisThickness}"></rect>
 					</clipPath>
 				</defs>
+				<text class="axis label" clip-path="url(#name-space)">${this.model.name}</text>
 				<text class="axis minus"> − </text>
 				<text class="axis plus "> + </text>
-				<text class="axis label" clip-path="url(#name-space)">${this.model.name}</text>
 				
 				<g class="child-container"></g>
 				<g class="delete-clicker"></g><!-- TODO -->
@@ -69,7 +77,7 @@ export default class LyphTemplateBox extends SvgEntity {
 			pointerEvents:  'none'
 		});
 		const axisText = result.find('text.axis').css({
-			stroke:           'black',
+			stroke:           'white',
 			fill:             'white',
 			fontSize:         '14px',
 			textRendering:    'geometricPrecision',
@@ -78,7 +86,7 @@ export default class LyphTemplateBox extends SvgEntity {
 		});
 		const axisMinus     = axisText.filter('.minus').css('text-anchor', 'start');
 		const axisPlus      = axisText.filter('.plus') .css('text-anchor', 'end');
-		const axisLabel     = axisText.filter('.label').css('text-anchor', 'middle');
+		const axisLabel     = axisText.filter('.label').css('text-anchor', 'middle').css({ stroke: 'none' });
 		const nameSpacePath = result.find('defs > clipPath > rect.name-space');
 
 		/* alter DOM based on observed changes */
@@ -125,8 +133,9 @@ export default class LyphTemplateBox extends SvgEntity {
 		(deleteClicker.element)
 			.cssPlug('display', Kefir.combine([
 				this.p('hovering'),
-				deleteClicker.p('hovering')
-			]).map(([a, b]) => (a || b) ? 'block' : 'none'));
+				deleteClicker.p('hovering'),
+			    this.root.p('draggingSomething')
+			]).map(([h1, h2, d]) => (h1 || h2) && !d ? 'block' : 'none'));
 
 		return result;
 	}

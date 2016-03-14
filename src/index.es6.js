@@ -5,12 +5,12 @@ import $                                    from 'jquery';
 import GoldenLayout                         from './libs/golden-layout.es6.js';
 
 /* local imports */
-import LyphCanvasComponent              from './LyphCanvasComponent.es6.js';
-import MiscToolButtonsListComponent     from './MiscToolButtonsListComponent.es6.js';
-import ProcessTypeButtonListComponent   from './ProcessTypeButtonListComponent.es6.js';
-import LyphTemplateButtonListComponent  from './LyphTemplateButtonListComponent.es6.js';
-import CanonicalTreeButtonListComponent from './CanonicalTreeButtonListComponent.es6.js';
-import Resources                        from './util/Resources.es6.js';
+import LyphCanvasComponent              from './angular/LyphCanvasComponent.es6.js';
+import MiscToolButtonsListComponent     from './angular/MiscToolButtonsListComponent.es6.js';
+import ProcessTypeButtonListComponent   from './angular/ProcessTypeButtonListComponent.es6.js';
+import LyphTemplateButtonListComponent  from './angular/LyphTemplateButtonListComponent.es6.js';
+import CanonicalTreeButtonListComponent from './angular/CanonicalTreeButtonListComponent.es6.js';
+import Resources                        from './Resources.es6.js';
 
 /* styling */
 import './index.scss';

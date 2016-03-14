@@ -1,19 +1,19 @@
-import {Component, EventEmitter} from 'angular2/core';
+import {Component, EventEmitter} from '../../node_modules/angular2/core';
 import $                         from 'jquery';
 
-import CanonicalTreeButtonComponent from './CanonicalTreeButtonComponent.es6.js';
-import Resources, {request} from './util/Resources.es6.js';
+import LyphTemplateButtonComponent from './LyphTemplateButtonComponent.es6.js';
+import Resources, {request} from '../Resources.es6.js';
 
 
 @Component({
-	selector: 'canonical-tree-button-list',
+	selector: 'lyph-template-button-list',
 	inputs: ['activeTool'      ],
 	events: ['activeToolChange'],
 	pipes: [
-		require('./util/substring-pipe.es6.js').default
+		require('./FieldSubstringPipe.es6.js').default
 	],
 	directives: [
-		CanonicalTreeButtonComponent
+		LyphTemplateButtonComponent
 	],
 	template: `
 
@@ -24,7 +24,7 @@ import Resources, {request} from './util/Resources.es6.js';
 					type        = "text"
 					class       = "form-control"
 					style       = "border-radius: 0"
-			        placeholder = "Filter Canonical Trees"
+			        placeholder = "Filter Lyph Templates"
 					(input)     = "filter = $event.target.value"
 					(paste)     = "filter = $event.target.value">
 				<span class="glyphicon glyphicon-filter form-control-feedback"></span>
@@ -32,14 +32,14 @@ import Resources, {request} from './util/Resources.es6.js';
 
 			<!--<div style="visibility: hidden; height: 34px"></div>-->
 
-			<canonical-tree
+			<lyph-template
 				*ngFor             = " #model of models | fieldSubstring:filterText:filter "
 				 class             = " list-group-item                                     "
 				[model]            = " model                                               "
 				[activeTool]       = " activeTool                                          "
 				(activeToolChange) = " activeToolChange.next($event)                       "
 				[highlight]        = " filter                                              ">
-	        </canonical-tree>
+	        </lyph-template>
 		</div>
 
 	`,
@@ -49,20 +49,20 @@ import Resources, {request} from './util/Resources.es6.js';
 			display: block;
 		}
 
-		canonical-tree.selected {
+		lyph-template.selected {
 			border-left : solid 3px black !important;
 			border-right: solid 3px black !important;
 		}
 
 	`]
 })
-export default class CanonicalTreeButtonListComponent {
+export default class LyphTemplateButtonListComponent {
 
 	activeTool;
 	activeToolChange = new EventEmitter;
 
 	constructor(resources: Resources) {
-		this.models = resources.getAllResources_sync()['canonicalTrees'];
+		this.models = resources.getAllResources_sync()['lyphTemplates'];
 	}
 
 	filterText(model) { return model.name }

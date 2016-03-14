@@ -1,14 +1,14 @@
-import {Component, ChangeDetectorRef, ElementRef, EventEmitter} from 'angular2/core';
+import {Component, ChangeDetectorRef, ElementRef, EventEmitter} from '../../node_modules/angular2/core';
 import $                                                        from 'jquery';
-import interact                                                 from './libs/interact.js';
+import interact                                                 from '../libs/interact.js';
 
-import {sw} from './util/misc.es6.js';
+import {sw} from '../util/misc.es6.js';
 
-import SVGEntity         from './new/SvgEntity.es6.js';
-import LyphTemplateBox   from './new/LyphTemplateBox.es6.js';
-import NodeCircle        from './new/NodeCircle.es6.js';
-import ProcessLine       from './new/ProcessLine.es6.js';
-import CanonicalTreeLine from './new/CanonicalTreeLine.es6.js';
+import {property}        from '../canvas/ValueTracker.es6.js';
+import SVGEntity         from '../canvas/SvgEntity.es6.js';
+import LyphTemplateBox   from '../canvas/LyphTemplateBox.es6.js';
+import NodeCircle        from '../canvas/NodeCircle.es6.js';
+import ProcessLine       from '../canvas/ProcessLine.es6.js';
 
 
 @Component({
@@ -44,6 +44,8 @@ import CanonicalTreeLine from './new/CanonicalTreeLine.es6.js';
 })
 export default class LyphCanvasComponent extends SVGEntity {
 
+	@property({initial: false}) draggingSomething;
+
 	added = new EventEmitter;
 
 	constructor({nativeElement}: ElementRef, changeDetectorRef: ChangeDetectorRef) {
@@ -71,10 +73,10 @@ export default class LyphCanvasComponent extends SVGEntity {
 			let mouseCoords = this.pageToCanvas({ x: event.pageX, y: event.pageY});
 
 			this.activeTool.result = await sw(this.activeTool.form)({
-				'box':                 ()=> this.deployTool_LyphTemplateBox(event, mouseCoords),
-				'node':                ()=> this.deployTool_NodeCircle     (event, mouseCoords),
-				'process':             ()=> this.deployTool_ProcessLine    (event, mouseCoords),
-				'canonical-tree-line': ()=> this.deployTool_CanonicalTree  (event, mouseCoords)
+				'box':     ()=> this.deployTool_LyphTemplateBox(event, mouseCoords),
+				'node':    ()=> this.deployTool_NodeCircle     (event, mouseCoords),
+				'process': ()=> this.deployTool_ProcessLine    (event, mouseCoords)
+				// 'canonical-tree-line': ()=> this.deployTool_CanonicalTree  (event, mouseCoords)
 			});
 
 			this.added.next(this.activeTool);
@@ -140,25 +142,25 @@ export default class LyphCanvasComponent extends SVGEntity {
 		return process.target.startDraggingBy(event);
 	};
 	
-	deployTool_CanonicalTree(event, {x, y}) {
-		let process = new CanonicalTreeLine({
-			parent: this,
-			model : { id: -1, name: 'test canonicalTree' }, // TODO: real process models
-			source: new NodeCircle({
-				parent: this,
-				model : { id: -1, name: 'test source node' }, // TODO: real node models
-				x, y
-			}),
-			target: new NodeCircle({
-				parent: this,
-				model : { id: -1, name: 'test target node' }, // TODO: real node models
-				x, y
-			})
-		});
-		$(this.nativeElement).find('.svg-nodes').append(process.source.element).append(process.target.element);
-		$(this.nativeElement).find('.svg-process-edges').append(process.element);
-		return process.target.startDraggingBy(event);
-	};
+	// deployTool_CanonicalTree(event, {x, y}) {
+	// 	let process = new CanonicalTreeLine({
+	// 		parent: this,
+	// 		model : { id: -1, name: 'test canonicalTree' }, // TODO: real process models
+	// 		source: new NodeCircle({
+	// 			parent: this,
+	// 			model : { id: -1, name: 'test source node' }, // TODO: real node models
+	// 			x, y
+	// 		}),
+	// 		target: new NodeCircle({
+	// 			parent: this,
+	// 			model : { id: -1, name: 'test target node' }, // TODO: real node models
+	// 			x, y
+	// 		})
+	// 	});
+	// 	$(this.nativeElement).find('.svg-nodes').append(process.source.element).append(process.target.element);
+	// 	$(this.nativeElement).find('.svg-process-edges').append(process.element);
+	// 	return process.target.startDraggingBy(event);
+	// };
 
 	deployTool_LyphTemplateBox(event, {x, y}) {
 		let lyphTemplateBox = new LyphTemplateBox({

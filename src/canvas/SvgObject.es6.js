@@ -2,20 +2,19 @@ import {abstract}                 from 'core-decorators';
 import {pick, identity, isFinite} from 'lodash';
 import interact                   from '../libs/interact.js';
 
-import ValueTracker from './ValueTracker.es6.js';
+import ValueTracker, {property} from './ValueTracker.es6.js';
+
 
 @abstract export default class SvgObject extends ValueTracker {
 
-	constructor(options) {
-		super(options);
+	// properties //////////////////////////////////////////////////////////////////////////////////
 
-		this.newProperty('dragging', { initial: false });
-		this.newProperty('resizing', { initial: false });
-		this.newProperty('hovering', { initial: false });
-	}
+	@property({initial: false}) dragging;
+	@property({initial: false}) resizing;
+	@property({initial: false}) hovering;
 
 
-	/* public */
+	// public //////////////////////////////////////////////////////////////////////////////////////
 
 	get element() {
 		if (!this._element) {
@@ -81,7 +80,7 @@ import ValueTracker from './ValueTracker.es6.js';
 	}
 
 
-	/* private */
+	// private /////////////////////////////////////////////////////////////////////////////////////
 
 	_makeInteractable(mainElement) {
 		if (this.draggable) {

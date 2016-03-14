@@ -1,5 +1,5 @@
-export const request = require('../libs/superagent.es6.js').default;
-import {sw, withoutDuplicates} from '../util/misc.es6.js';
+export const request = require('./libs/superagent.es6.js').default;
+import {sw, withoutDuplicates} from './util/misc.es6.js';
 
 request.basePath = 'http://open-physiology.org:8889';
 
@@ -23,7 +23,7 @@ export default class Resources {
 		if (!this[models][type] && !this[modelLists][type]) {
 
 			if (type === 'processTypes') {
-				this[modelLists][type] = require('../../process-types.json');
+				this[modelLists][type] = require('../process-types.json');
 			} else {
 				this[modelLists][type] = await request.get(`/${type}`).then(v => v.body);
 			}
@@ -44,7 +44,7 @@ export default class Resources {
 		if (!this[models][type] && !this[modelLists][type]) {
 
 			if (type === 'processTypes') {
-				this[modelLists][type] = require('../../process-types.json');
+				this[modelLists][type] = require('../process-types.json');
 			} else {
 				this[modelLists][type] = await request.get(`/${type}/${withoutDuplicates(ids).join(',')}`).then(v => v.body);
 			}

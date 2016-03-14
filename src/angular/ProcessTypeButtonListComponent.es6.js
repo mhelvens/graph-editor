@@ -1,19 +1,18 @@
-import {Component, EventEmitter} from 'angular2/core';
-import $                         from 'jquery';
+import {Component, EventEmitter} from '../../node_modules/angular2/core';
 
-import LyphTemplateButtonComponent from './LyphTemplateButtonComponent.es6.js';
-import Resources, {request} from './util/Resources.es6.js';
+import ProcessTypeButtonComponent from './ProcessTypeButtonComponent.es6.js';
+import Resources, {request} from '../Resources.es6.js';
 
 
 @Component({
-	selector: 'lyph-template-button-list',
+	selector: 'process-type-button-list',
 	inputs: ['activeTool'      ],
 	events: ['activeToolChange'],
 	pipes: [
-		require('./util/substring-pipe.es6.js').default
+		require('./FieldSubstringPipe.es6.js').default
 	],
 	directives: [
-		LyphTemplateButtonComponent
+		ProcessTypeButtonComponent
 	],
 	template: `
 
@@ -24,7 +23,7 @@ import Resources, {request} from './util/Resources.es6.js';
 					type        = "text"
 					class       = "form-control"
 					style       = "border-radius: 0"
-			        placeholder = "Filter Lyph Templates"
+			        placeholder = "Filter Process Types"
 					(input)     = "filter = $event.target.value"
 					(paste)     = "filter = $event.target.value">
 				<span class="glyphicon glyphicon-filter form-control-feedback"></span>
@@ -32,14 +31,14 @@ import Resources, {request} from './util/Resources.es6.js';
 
 			<!--<div style="visibility: hidden; height: 34px"></div>-->
 
-			<lyph-template
+			<process-type
 				*ngFor             = " #model of models | fieldSubstring:filterText:filter "
 				 class             = " list-group-item                                     "
 				[model]            = " model                                               "
 				[activeTool]       = " activeTool                                          "
 				(activeToolChange) = " activeToolChange.next($event)                       "
 				[highlight]        = " filter                                              ">
-	        </lyph-template>
+	        </process-type>
 		</div>
 
 	`,
@@ -49,20 +48,20 @@ import Resources, {request} from './util/Resources.es6.js';
 			display: block;
 		}
 
-		lyph-template.selected {
+		process-type.selected {
 			border-left : solid 3px black !important;
 			border-right: solid 3px black !important;
 		}
 
 	`]
 })
-export default class LyphTemplateButtonListComponent {
+export default class ProcessTypeButtonListComponent {
 
 	activeTool;
 	activeToolChange = new EventEmitter;
 
 	constructor(resources: Resources) {
-		this.models = resources.getAllResources_sync()['lyphTemplates'];
+		this.models = resources.getAllResources_sync()['processTypes'];
 	}
 
 	filterText(model) { return model.name }

@@ -1,14 +1,10 @@
-import {Component, EventEmitter, Inject} from 'angular2/core';
-
-const RECTANGLE_ICON = require('./img/draw-rectangle.png');
-const LINE_ICON      = require('./img/draw-line.png');
-
+import {Component, EventEmitter, Inject} from '../../node_modules/angular2/core';
 
 @Component({
-	selector: 'lyph-template',
+	selector: 'process-type',
 	pipes: [
-		require('./util/underline-substring-pipe.es6.js').default,
-		require('./util/escape-html-pipe.es6.js')        .default
+		require('./UnderlineSubstringPipe.es6.js').default,
+		require('./EscapeHtmlPipe.es6.js')        .default
 	],
 	inputs: ['model', 'highlight', 'activeTool'],
 	events: ['activeToolChange'],
@@ -19,12 +15,17 @@ const LINE_ICON      = require('./img/draw-line.png');
 	},
 	template: `
 
-		<div class="icon icon-LyphTemplate"></div>
-		<div class="text-content" [innerHtml]="(model.name + ' ('+model.id+')') | escapeHTML | underlineSubstring:highlight"></div>
+		<div class="icon icon-draw-line"></div>
+		<div class="text-content" [innerHtml]="model.name | escapeHTML | underlineSubstring:highlight"></div>
 
 		<div class="buttons">
-			<div class="button box " [class.active]=" toolSelected('box',  activeTool) " (click)=" setTool('box' ) "></div>
-			<div class="button line" [class.active]=" toolSelected('line', activeTool) " (click)=" setTool('line') "></div>
+			<div class="button line" [class.active]=" toolSelected('process', activeTool) " (click)=" setTool('process') ">
+				<svg style="width: 32px; height: 32px">
+					<line x1="5" y1="27" x2="27" y2="5" style="stroke-width: 3px" [style.stroke]="model.color"></line>
+					<circle r="3.5" cx="5" cy="27" style="stroke: black; fill: white;"></circle>
+					<circle r="3.5" cx="27" cy="5" style="stroke: black; fill: white;"></circle>
+				</svg>
+			</div>
 		</div>
 
 	`,
@@ -35,9 +36,9 @@ const LINE_ICON      = require('./img/draw-line.png');
 			color: black !important;
 		}
 
-		:host        { background-color: #fee !important }
-		:host:hover  { background-color: #fcc !important }
-		:host.active { background-color: #fcc !important; font-style: italic; }
+		:host        { background-color: #fff !important }                       
+		:host:hover  { background-color: #ddd !important }                       
+		:host.active { background-color: #ddd !important; font-style: italic; }  
 
 		.text-content {
 			font-weight: bold;
@@ -53,23 +54,23 @@ const LINE_ICON      = require('./img/draw-line.png');
 			border-color: transparent;
 			width:  34px !important;
 			height: 34px !important;
-			background-repeat: no-repeat;
-			background-position: center center;
+			padding: 1px;
 		}
 
 		.button:hover {
 			border-style: dotted !important;
 			border-color: gray   !important;
+			padding: 0px !important;
 		}
 
 		.button.active {
 			border-style:     solid !important;
 			border-color:     black !important;
 			background-color: white !important;
+			padding: 0px !important;
 		}
 
-		.button.box  { background-image: url(${RECTANGLE_ICON}) }
-		.button.line { background-image: url(${LINE_ICON})      }
+		
 
 		.buttons > .button:not(:first-child) {
 			margin-top: 5px;
@@ -77,7 +78,7 @@ const LINE_ICON      = require('./img/draw-line.png');
 
 	`]
 })
-export default class LyphTemplateButtonComponent {
+export default class ProcessTypeButtonComponent {
 
 	model;
 	highlight;

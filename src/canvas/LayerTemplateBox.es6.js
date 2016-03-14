@@ -2,7 +2,8 @@ import _, {pick, isFinite, identity} from 'lodash';
 import $                             from '../libs/jquery.es6.js';
 import {getHsvGolden}                from 'golden-colors';
 
-import SvgEntity from './SvgEntity.es6.js';
+import {property} from './ValueTracker.es6.js';
+import SvgEntity  from './SvgEntity.es6.js';
 import NodeCircle from "./NodeCircle.es6.js";
 
 
@@ -11,26 +12,21 @@ const _color = Symbol('color');
 
 export default class LyphTemplateBox extends SvgEntity {
 
-	// get x()  { return this.getVal('x') }
-	// set x(v) { this.setVal('x', v)  }
-	//
-	// get y()  { return this.getVal('y') }
-	// set y(v) { this.setVal('y', v)  }
-	//
-	// get width()  { return this.getVal('width') }
-	// set width(v) { this.setVal('width', v) }
-	//
-	// get height()  { return this.getVal('height') }
-	// set height(v) { this.setVal('height', v)  }
+
+	@property({isValid: isFinite}) x;
+	@property({isValid: isFinite}) y;
+	@property({isValid: isFinite}) width;
+	@property({isValid: isFinite}) height;
 
 	constructor(options) {
 		super(options);
-		// Object.assign(this, pick(options, 'x', 'y', 'width', 'height'));
 
-		this.newProperty('x',        { initial: options.x,      isValid: isFinite });
-		this.newProperty('y',        { initial: options.y,      isValid: isFinite });
-		this.newProperty('width',    { initial: options.width,  isValid: isFinite });
-		this.newProperty('height',   { initial: options.height, isValid: isFinite });
+		Object.assign(this, pick(options, 'x', 'y', 'width', 'height'));
+
+		// this.newProperty('x',        { initial: options.x,      isValid: isFinite });
+		// this.newProperty('y',        { initial: options.y,      isValid: isFinite });
+		// this.newProperty('width',    { initial: options.width,  isValid: isFinite });
+		// this.newProperty('height',   { initial: options.height, isValid: isFinite });
 
 	}
 

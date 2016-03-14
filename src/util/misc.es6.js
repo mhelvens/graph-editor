@@ -1,5 +1,4 @@
 function extractExpression(fn) {
-	console.log(fn.toString());
 	let match = fn.toString().match(/function\s*\(.*?\)\s*\{\s*return\s*(.*?)\s*?;\s*\}/);
 	if (!match) { match = fn.toString().match(/function\s*\(.*?\)\s*\{\s*(.*?)\s*\}/) }
 	if (!match) { return null }

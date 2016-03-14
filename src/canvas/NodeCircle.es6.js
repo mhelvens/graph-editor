@@ -1,14 +1,14 @@
-import {pick, isFinite}   from 'lodash';
-import $        from 'jquery';
-import interact from '../libs/interact.js';
-import Kefir    from '../libs/kefir.es6.js';
+import {pick, isFinite} from 'lodash';
+import $                from 'jquery';
+import interact         from '../libs/interact.js';
+import Kefir            from '../libs/kefir.es6.js';
 
 import {boundBy, abs, sw} from '../util/misc.es6.js';
 
+import {property}       from './ValueTracker.es6.js';
 import SvgEntity        from './SvgEntity.es6.js';
 import LayerTemplateBox from './LayerTemplateBox.es6.js';
 import ProcessLine       from './ProcessLine.es6.js';
-import CanonicalTreeLine from './CanonicalTreeLine.es6.js';
 
 
 export default class NodeCircle extends SvgEntity {
@@ -17,12 +17,12 @@ export default class NodeCircle extends SvgEntity {
 	static DRAGGING_RADIUS = 16;
 	static SNAP_DISTANCE   = 20;
 
+	@property({isValid: isFinite}) x;
+	@property({isValid: isFinite}) y;
+
 	constructor(options) {
 		super(options);
-
-		/* properties */
-		this.newProperty('x', { initial: options.x, isValid: isFinite });
-		this.newProperty('y', { initial: options.y, isValid: isFinite });
+		Object.assign(this, pick(options, 'x', 'y'));
 	}
 
 	createElement() {
@@ -31,13 +31,13 @@ export default class NodeCircle extends SvgEntity {
 			<g>
 				<circle class="node center" r="0.1"></circle>
 				<circle class="node shape"></circle>
-				<g      class="delete-clicker"></g>
+				<g class="delete-clicker"></g>
 			</g>
 		`);
 
 		/* extract and style important elements */
 		const center = result.children('.node.center');
-		const shape = result.children('.node.shape').css({
+		const shape  = result.children('.node.shape').css({
 			stroke: 'black',
 			fill:   'white'
 		});
@@ -65,8 +65,9 @@ export default class NodeCircle extends SvgEntity {
 		(deleteClicker.element)
 			.cssPlug('display', Kefir.combine([
 				this.p('hovering'),
-				deleteClicker.p('hovering')
-			]).map(([a, b]) => (a || b) ? 'block' : 'none'));
+				deleteClicker.p('hovering'),
+				this.root.p('draggingSomething')
+			]).map(([h1, h2, d]) => (h1 || h2) && !d ? 'block' : 'none'));
 
 		/* drawing process with a tool */
 		interact(shape[0]).on('down', async (event) => {
@@ -78,8 +79,8 @@ export default class NodeCircle extends SvgEntity {
 			let mouseCoords = this.pageToCanvas({ x: event.pageX, y: event.pageY});
 
 			this.root.activeTool.result = await sw(this.root.activeTool.form)({
-				'process':             ()=> this.deployTool_ProcessLine    (event, mouseCoords),
-				'canonical-tree-line': ()=> this.deployTool_CanonicalTree  (event, mouseCoords)
+				'process': ()=> this.deployTool_ProcessLine(event, mouseCoords)
+				// 'canonical-tree-line': ()=> this.deployTool_CanonicalTree  (event, mouseCoords)
 			});
 
 			this.root.added.next(this.activeTool);
@@ -114,21 +115,21 @@ export default class NodeCircle extends SvgEntity {
 		return process.target.startDraggingBy(event);
 	};
 
-	deployTool_CanonicalTree(event, {x, y}) {
-		let process = new CanonicalTreeLine({
-			parent: this.root,
-			model : { id: -1, name: 'test canonical tree' }, // TODO: real process models
-			source: this,
-			target: new NodeCircle({
-				parent: this.parent,
-				model : { id: -1, name: 'test target node' }, // TODO: real node models
-				x, y
-			})
-		});
-		this.root.element.find('.svg-nodes').append(process.target.element);
-		this.root.element.find('.svg-process-edges').append(process.element);
-		return process.target.startDraggingBy(event);
-	};
+	// deployTool_CanonicalTree(event, {x, y}) {
+	// 	let process = new CanonicalTreeLine({
+	// 		parent: this.root,
+	// 		model : { id: -1, name: 'test canonical tree' }, // TODO: real process models
+	// 		source: this,
+	// 		target: new NodeCircle({
+	// 			parent: this.parent,
+	// 			model : { id: -1, name: 'test target node' }, // TODO: real node models
+	// 			x, y
+	// 		})
+	// 	});
+	// 	this.root.element.find('.svg-nodes').append(process.target.element);
+	// 	this.root.element.find('.svg-process-edges').append(process.element);
+	// 	return process.target.startDraggingBy(event);
+	// };
 
 	draggable() {
 		let raw, parentRect;

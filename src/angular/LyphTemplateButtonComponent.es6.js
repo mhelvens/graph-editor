@@ -1,13 +1,14 @@
-import {Component, EventEmitter, Inject} from 'angular2/core';
+import {Component, EventEmitter, Inject} from '../../node_modules/angular2/core';
 
-const LINE_ICON      = require('./img/draw-line.png');
+const RECTANGLE_ICON = require('../img/draw-rectangle.png');
+const LINE_ICON      = require('../img/draw-line.png');
 
 
 @Component({
-	selector: 'canonical-tree',
+	selector: 'lyph-template',
 	pipes: [
-		require('./util/underline-substring-pipe.es6.js').default,
-		require('./util/escape-html-pipe.es6.js')        .default
+		require('./UnderlineSubstringPipe.es6.js').default,
+		require('./EscapeHtmlPipe.es6.js')        .default
 	],
 	inputs: ['model', 'highlight', 'activeTool'],
 	events: ['activeToolChange'],
@@ -18,11 +19,12 @@ const LINE_ICON      = require('./img/draw-line.png');
 	},
 	template: `
 
-		<div class="icon icon-Correlation"></div>
+		<div class="icon icon-LyphTemplate"></div>
 		<div class="text-content" [innerHtml]="(model.name + ' ('+model.id+')') | escapeHTML | underlineSubstring:highlight"></div>
 
 		<div class="buttons">
-			<div class="button line" [class.active]=" toolSelected('canonical-tree-line', activeTool) " (click)=" setTool('canonical-tree-line') "></div>
+			<div class="button box " [class.active]=" toolSelected('box',  activeTool) " (click)=" setTool('box' ) "></div>
+			<div class="button line" [class.active]=" toolSelected('line', activeTool) " (click)=" setTool('line') "></div>
 		</div>
 
 	`,
@@ -33,9 +35,9 @@ const LINE_ICON      = require('./img/draw-line.png');
 			color: black !important;
 		}
 
-		:host        { background-color: #ffc !important }
-		:host:hover  { background-color: #ff9 !important }
-		:host.active { background-color: #ff6 !important; font-style: italic; }
+		:host        { background-color: #fee !important }
+		:host:hover  { background-color: #fcc !important }
+		:host.active { background-color: #fcc !important; font-style: italic; }
 
 		.text-content {
 			font-weight: bold;
@@ -66,6 +68,7 @@ const LINE_ICON      = require('./img/draw-line.png');
 			background-color: white !important;
 		}
 
+		.button.box  { background-image: url(${RECTANGLE_ICON}) }
 		.button.line { background-image: url(${LINE_ICON})      }
 
 		.buttons > .button:not(:first-child) {
@@ -74,7 +77,7 @@ const LINE_ICON      = require('./img/draw-line.png');
 
 	`]
 })
-export default class CanonicalTreeButtonComponent {
+export default class LyphTemplateButtonComponent {
 
 	model;
 	highlight;

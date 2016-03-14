@@ -2,7 +2,8 @@ import {pick, isFinite} from 'lodash';
 import $                from '../libs/jquery.es6.js';
 import Kefir            from '../libs/kefir.es6.js';
 
-import SvgEntity     from './SvgEntity.es6.js';
+
+import SvgEntity  from './SvgEntity.es6.js';
 
 
 export default class ProcessLine extends SvgEntity {
@@ -57,8 +58,9 @@ export default class ProcessLine extends SvgEntity {
 		(deleteClicker.element)
 			.cssPlug('display', Kefir.combine([
 				this.p('hovering'),
-				deleteClicker.p('hovering')
-			]).map(([a, b]) => (a || b) ? 'block' : 'none'));
+				deleteClicker.p('hovering'),
+				this.root.p('draggingSomething')
+			]).map(([h1, h2, d]) => (h1 || h2) && !d ? 'block' : 'none'));
 
 		return result;
 	}

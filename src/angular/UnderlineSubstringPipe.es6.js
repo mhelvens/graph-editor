@@ -1,4 +1,4 @@
-import {Pipe} from 'angular2/core';
+import {Pipe} from '../../node_modules/angular2/core';
 
 function escapeForRegex(s) {
 	return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');

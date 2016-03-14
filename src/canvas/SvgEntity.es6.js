@@ -4,7 +4,7 @@ import {memoize, pick, identity} from 'lodash';
 import {assert} from '../util/misc.es6.js';
 
 import SvgObject     from './SvgObject.es6.js';
-import DeleteClicker from '../DeleteClicker.es6.js';
+import DeleteClicker from './DeleteClicker.es6.js';
 
 
 @abstract export default class SvgEntity extends SvgObject {
@@ -18,6 +18,7 @@ import DeleteClicker from '../DeleteClicker.es6.js';
 		super(options);
 		Object.assign(this, pick(options, 'model'));
 		this.setParent(options.parent);
+		this.root.p('draggingSomething').plug(this.p('dragging'));
 	}
 
 	setParent(newParent) {
@@ -50,7 +51,7 @@ import DeleteClicker from '../DeleteClicker.es6.js';
 
 	createDeleteClicker() {
 		let result = new DeleteClicker();
-		result.e('click').onValue((event) => {
+		result.clicks.onValue((event) => {
 			event.stopPropagation();
 			this.delete();
 		});

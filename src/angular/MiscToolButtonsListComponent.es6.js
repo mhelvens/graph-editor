@@ -1,10 +1,10 @@
-import {Component, EventEmitter} from 'angular2/core';
+import {Component, EventEmitter} from '../../node_modules/angular2/core';
 
-import Resources, {request} from './util/Resources.es6.js';
+import Resources, {request} from '../Resources.es6.js';
 
-const RECTANGLE_ICON = require('./img/draw-rectangle.png');
-const LINE_ICON      = require('./img/draw-line.png');
-const NODE_ICON      = require('./img/draw-node.png');
+const RECTANGLE_ICON = require('../img/draw-rectangle.png');
+const LINE_ICON      = require('../img/draw-line.png');
+const NODE_ICON      = require('../img/draw-node.png');
 
 @Component({
 	selector: 'misc-tool-buttons-list',

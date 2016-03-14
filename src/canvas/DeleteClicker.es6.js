@@ -1,15 +1,13 @@
-import $ from './libs/jquery.es6.js';
+import $ from '../libs/jquery.es6.js';
 
-import SvgObject from './new/SvgObject.es6.js';
+import {event} from './ValueTracker.es6.js';
+import SvgObject from './SvgObject.es6.js';
 
 export default class DeleteClicker extends SvgObject {
 
 	static RADIUS = 10;
 
-	constructor(options) {
-		super(options);
-		this.newEvent('click');
-	}
+	@event() clicks;
 
 	createElement() {
 		
@@ -36,7 +34,7 @@ export default class DeleteClicker extends SvgObject {
 		});
 
 		/* observables */
-		this.e('click').plug(circle.asKefirStream('click'));
+		this.clicks.plug(circle.asKefirStream('click'));
 		this.p('hovering')
 		    .plug(circle.asKefirStream('mouseenter').map(()=>true ))
 		    .plug(circle.asKefirStream('mouseleave').map(()=>false));
