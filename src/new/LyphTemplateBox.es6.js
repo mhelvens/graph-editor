@@ -1,5 +1,6 @@
-import _, {pick, range, zip, sortBy} from 'lodash';
-import $                             from '../libs/jquery.es6.js';
+import _, {pick, range, zip, sortBy, isFinite} from 'lodash';
+import Kefir                                   from '../libs/kefir.es6.js';
+import $                                       from '../libs/jquery.es6.js';
 
 import {assert, boundBy} from '../util/misc.es6.js';
 import Resources         from '../util/Resources.es6.js';
@@ -11,29 +12,19 @@ export default class LyphTemplateBox extends SvgEntity {
 
 	get axisThickness() { return 15 }
 
-	get x()  { return this.getVal('x') }
-	set x(v) { this.setVal('x', v)  }
-
-	get y()  { return this.getVal('y') }
-	set y(v) { this.setVal('y', v)  }
-
-	get width()  { return this.getVal('width') }
-	set width(v) { this.setVal('width', Math.max(this.minWidth, parseInt(v, 10))) }
-
-	get height()  { return this.getVal('height') }
-	set height(v) { this.setVal('height', Math.max(this.minHeight, parseInt(v, 10)))  }
-
 	get minWidth ()   { return 2 * (this.axisThickness + 1)                                         }
 	get minHeight()   { return this.axisThickness + (this.model ? this.model.layers.length * 2 : 5) }
-
-	get hovering()  { return this.getVal('hovering') }
-	set hovering(v) { this.setVal('hovering', v)     }
 
 	layerTemplateBoxes = [];
 
 	constructor(options) {
 		super(options);
-		Object.assign(this, pick(options, 'x', 'y', 'width', 'height'));
+
+		/* properties */
+		this.newProperty('x',        { initial: options.x,      isValid: isFinite });
+		this.newProperty('y',        { initial: options.y,      isValid: isFinite });
+		this.newProperty('width',    { initial: options.width,  isValid: isFinite });
+		this.newProperty('height',   { initial: options.height, isValid: isFinite });
 
 		/* create the layers */
 		let resources = new Resources;
@@ -78,81 +69,64 @@ export default class LyphTemplateBox extends SvgEntity {
 			pointerEvents:  'none'
 		});
 		const axisText = result.find('text.axis').css({
-			stroke:         'black',
-			fill: 'white',
-			fontSize: '14px',
-			textRendering: 'geometricPrecision',
-			pointerEvents: 'none',
+			stroke:           'black',
+			fill:             'white',
+			fontSize:         '14px',
+			textRendering:    'geometricPrecision',
+			pointerEvents:    'none',
 			dominantBaseline: 'text-before-edge'
 		});
-		const axisMinus = axisText.filter('.minus').css('text-anchor', 'start');
-		const axisPlus  = axisText.filter('.plus') .css('text-anchor', 'end');
-		const axisLabel = axisText.filter('.label').css('text-anchor', 'middle');
+		const axisMinus     = axisText.filter('.minus').css('text-anchor', 'start');
+		const axisPlus      = axisText.filter('.plus') .css('text-anchor', 'end');
+		const axisLabel     = axisText.filter('.label').css('text-anchor', 'middle');
 		const nameSpacePath = result.find('defs > clipPath > rect.name-space');
 
 		/* alter DOM based on observed changes */
 		lyphTemplate.mouseenter(() => { this.hovering = true  });
 		lyphTemplate.mouseleave(() => { this.hovering = false });
-		this.observeExpressions([
-			[lyphTemplate, {
-				x:      [['x'],      (x)      => x      ],
-				y:      [['y'],      (y)      => y      ],
-				width:  [['width'],  (width)  => width  ],
-				height: [['height'], (height) => height ]
-			}],
-			[nameSpacePath, {
-				x:      [['x'],           (x)         => x + this.axisThickness          ],
-				y:      [['y', 'height'], (y, height) => y + height - this.axisThickness ],
-				width:  [['width'],       (width)     => width - 2 * this.axisThickness  ]
-			}],
-			[axis, {
-				x:      [['x'],           (x)         => x                               ],
-				y:      [['y', 'height'], (y, height) => y + height - this.axisThickness ],
-				width:  [['width'],       (width)     => width                           ]
-			}],
-			[axisMinus, { x: [['x'],           (x)         => x + 1                                 ] }],
-			[axisPlus,  { x: [['x', 'width'],  (x, width)  => x + width - 1                         ] }],
-			[axisLabel, { x: [['x', 'width'],  (x, width)  => x + width / 2                         ] }],
-			[axisText,  { y: [['y', 'height'], (y, height) => y + height - this.axisThickness - 0.5 ] }]
-		], {
-			setter(element, key, val) { element.attr(key, val) },
-			ready: isFinite
-		});
+		for (let prop of ['x', 'y', 'width', 'height']) {
+			this.p(prop).onValue((v) => { lyphTemplate.attr(prop, v) });
+		}
+
+		nameSpacePath
+			.attrPlug('x',     this.p( 'x'           ).map(( x         ) => x + this.axisThickness)          )
+			.attrPlug('y',     this.p(['y', 'height']).map(([y, height]) => y + height - this.axisThickness) )
+			.attrPlug('width', this.p( 'width'       ).map(( width     ) => width - 2 * this.axisThickness)  );
+
+		axis
+			.attrPlug('x',     this.p( 'x'           )                                                       )
+			.attrPlug('y',     this.p(['y', 'height']).map(([y, height]) => y + height - this.axisThickness) )
+			.attrPlug('width', this.p( 'width'       )                                                       );
+
+		axisMinus.attrPlug('x', this.p( 'x'           ).map(( x         ) => x + 1)                                 );
+		axisPlus .attrPlug('x', this.p(['x', 'width' ]).map(([x, width ]) => x + width - 1)                         );
+		axisLabel.attrPlug('x', this.p(['x', 'width' ]).map(([x, width ]) => x + width / 2)                         );
+		axisText .attrPlug('y', this.p(['y', 'height']).map(([y, height]) => y + height - this.axisThickness - 0.5) );
+
 
 		/* add layer elements and change their positioning based on observed changes */
-		const layerHeight = (height) => (height - this.axisThickness) / (this.model ? this.model.layers.length : 5);
 		for (let lTBox of this.layerTemplateBoxes) {
+			const layerHeight = (height) => (height - this.axisThickness) / (this.model ? this.model.layers.length : 5);
 			result.children('.child-container').append(lTBox.element);
-			this.observeExpressions([[lTBox, {
-				x:      [['x'],           (x)         => x                                                                                 ],
-				y:      [['height', 'y'], (height, y) => y + (this.layerTemplateBoxes.length - lTBox.model.position) * layerHeight(height) ],
-				width:  [['width'],       (width)     => width                                                                             ],
-				height: [['height'],      (height)    => layerHeight(height)                                                               ]
-			}]], {
-				setter(element, key, val) { element[key] = val },
-				ready: isFinite
-			});
+			lTBox.p('x')     .plug( this.p( 'x'           )                                                                                                         );
+			lTBox.p('width') .plug( this.p( 'width'       )                                                                                                         );
+			lTBox.p('y')     .plug( this.p(['y', 'height']).map(([y, height]) => y + (this.layerTemplateBoxes.length - lTBox.model.position) * layerHeight(height)) );
+			lTBox.p('height').plug( this.p( 'height'      ).map(layerHeight)                                                                                        );
 		}
 
 		/* delete button */
 		let deleteClicker = this.createDeleteClicker();
 		deleteClicker.element.appendTo(result.children('.delete-clicker'));
-		this.observeExpressions([[deleteClicker.element, {
-			x: [['width',  'x'], (width,  x) => width + x ],
-			y: [['y'],           (y)         => y         ]
-		}]], {
-			setter(element, key, val) { element.attr(key, val) },
-			ready: isFinite
-		});
-		const showHideDeleteClicker = () => {
-			if (this.hovering || deleteClicker.hovering) {
-				deleteClicker.element.show();
-			} else {
-				deleteClicker.element.hide();
-			}
-		};
-		this         .observe('hovering', showHideDeleteClicker);
-		deleteClicker.observe('hovering', showHideDeleteClicker);
+
+		(deleteClicker.element)
+			.attrPlug('x', this.p(['width',  'x']).map(([width, x]) => width + x) )
+			.attrPlug('y', this.p( 'y'           )                                );
+
+		(deleteClicker.element)
+			.cssPlug('display', Kefir.combine([
+				this.p('hovering'),
+				deleteClicker.p('hovering')
+			]).map(([a, b]) => (a || b) ? 'block' : 'none'));
 
 		return result;
 	}
@@ -177,7 +151,7 @@ export default class LyphTemplateBox extends SvgEntity {
 				this.moveToFront();
 
 				/* initialize interaction-local variables */
-				raw      = this.getVals('x', 'y');
+				raw      = pick(this, 'x', 'y');
 				rootRect = this.root.boundingBox();
 			},
 			onmove: ({dx, dy}) => {
@@ -194,16 +168,11 @@ export default class LyphTemplateBox extends SvgEntity {
 				visible.x = boundBy( rootRect.left, rootRect.left + rootRect.width  - this.width  )( visible.x );
 				visible.y = boundBy( rootRect.top,  rootRect.top  + rootRect.height - this.height )( visible.y );
 
-				/* difference in visible (x, y) */
-				dx = visible.x - this.x;
-				dy = visible.y - this.y;
-
 				/* set visible (x, y) based on snapping and restriction */
 				this.traverse((entity) => {
-					entity.x += dx;
-					entity.y += dy;
+					entity.x += visible.x - this.x;
+					entity.y += visible.y - this.y;
 				});
-				// this.setVals(visible);
 			}
 		};
 	}
@@ -218,7 +187,7 @@ export default class LyphTemplateBox extends SvgEntity {
 				this.moveToFront();
 
 				/* initialize interaction-local variables */
-				raw        = this.getVals('x', 'y', 'width', 'height');
+				raw        = pick(this, 'x', 'y', 'width', 'height');
 				parentRect = this.parent.boundingBox();
 			},
 			onmove: ({rect, edges}) => {
@@ -253,7 +222,7 @@ export default class LyphTemplateBox extends SvgEntity {
 				}
 
 				/* set visible (x, y) based on snapping and restriction */
-				this.setVals(visible);
+				this.set(visible);
 			}
 		};
 	}

@@ -43,18 +43,18 @@ import DeleteClicker from '../DeleteClicker.es6.js';
 	}
 
 	delete() {
-		this.fire('destroy');
+		this.trigger('destroy');
 		this.parent.children.delete(this);
 		this.element.remove();
 	}
 
 	createDeleteClicker() {
-		return new DeleteClicker({
-			onClick: (event) => {
-				event.stopPropagation();
-				this.delete();
-			}
+		let result = new DeleteClicker();
+		result.e('click').onValue((event) => {
+			event.stopPropagation();
+			this.delete();
 		});
+		return result;
 	}
 
 	// to override

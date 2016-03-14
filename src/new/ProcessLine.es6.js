@@ -1,5 +1,6 @@
 import {pick, isFinite} from 'lodash';
 import $                from '../libs/jquery.es6.js';
+import Kefir            from '../libs/kefir.es6.js';
 
 import SvgEntity     from './SvgEntity.es6.js';
 
@@ -9,14 +10,11 @@ export default class ProcessLine extends SvgEntity {
 	source;
 	target;
 
-	get hovering()  { return this.getVal('hovering') }
-	set hovering(v) { this.setVal('hovering', v)     }
-
 	constructor(options) {
 		super(options);
 		Object.assign(this, pick(options, 'source', 'target'));
-		this.source.one('destroy', () => { this.delete() });
-		this.target.one('destroy', () => { this.delete() });
+		this.source.e('destroy').take(1).onValue(() => { this.delete() });
+		this.target.e('destroy').take(1).onValue(() => { this.delete() });
 	}
 
 	createElement() {
@@ -24,7 +22,7 @@ export default class ProcessLine extends SvgEntity {
 			<g>
 				<line class="hover-area"></line>
 				<line class="process"></line>
-				<g    class="delete-clicker"></g><!-- TODO -->
+				<g    class="delete-clicker"></g>
 			</g>
 		`);
 		const line = result.children('line.process').css({
@@ -39,38 +37,28 @@ export default class ProcessLine extends SvgEntity {
 		});
 		const lines = result.children('line');
 
-		hoverArea.mouseenter(() => { this.hovering = true  });
-		hoverArea.mouseleave(() => { this.hovering = false });
-		this.source.observe('x', (x) => { lines.attr('x1', x) });
-		this.source.observe('y', (y) => { lines.attr('y1', y) });
-		this.target.observe('x', (x) => { lines.attr('x2', x) });
-		this.target.observe('y', (y) => { lines.attr('y2', y) });
+		this.p('hovering')
+		    .plug(hoverArea.asKefirStream('mouseenter').map(()=>true ))
+		    .plug(hoverArea.asKefirStream('mouseleave').map(()=>false));
+		lines
+			.attrPlug('x1', this.source.p('x'))
+			.attrPlug('y1', this.source.p('y'))
+			.attrPlug('x2', this.target.p('x'))
+			.attrPlug('y2', this.target.p('y'));
 
 		/* delete button */
 		let deleteClicker = this.createDeleteClicker();
 		deleteClicker.element.appendTo(result.children('.delete-clicker'));
 
-		const positionDeleteClicker = () => {
-			if (!isFinite(this.source.x)) { return }
-			if (!isFinite(this.source.y)) { return }
-			if (!isFinite(this.target.x)) { return }
-			if (!isFinite(this.target.y)) { return }
-			deleteClicker.element.attr('x', (this.source.x + this.target.x) / 2);
-			deleteClicker.element.attr('y', (this.source.y + this.target.y) / 2);
-		};
-		this.source.observe('x', positionDeleteClicker);
-		this.source.observe('y', positionDeleteClicker);
-		this.target.observe('x', positionDeleteClicker);
-		this.target.observe('y', positionDeleteClicker);
-		const showHideDeleteClicker = () => {
-			if (this.hovering || deleteClicker.hovering) {
-				deleteClicker.element.show();
-			} else {
-				deleteClicker.element.hide();
-			}
-		};
-		this         .observe('hovering', showHideDeleteClicker);
-		deleteClicker.observe('hovering', showHideDeleteClicker);
+		(deleteClicker.element)
+			.attrPlug('x', Kefir.combine([this.source.p('x'), this.target.p('x')]).map(([x1, x2]) => (x1 + x2) / 2) )
+			.attrPlug('y', Kefir.combine([this.source.p('y'), this.target.p('y')]).map(([y1, y2]) => (y1 + y2) / 2) );
+
+		(deleteClicker.element)
+			.cssPlug('display', Kefir.combine([
+				this.p('hovering'),
+				deleteClicker.p('hovering')
+			]).map(([a, b]) => (a || b) ? 'block' : 'none'));
 
 		return result;
 	}

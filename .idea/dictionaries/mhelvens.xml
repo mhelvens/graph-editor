@@ -6,7 +6,10 @@
       <w>dropzone</w>
       <w>interactable</w>
       <w>jsviews</w>
+      <w>kefir</w>
       <w>lyph</w>
+      <w>mouseenter</w>
+      <w>mouseleave</w>
       <w>ondragenter</w>
       <w>ondragleave</w>
       <w>ondrop</w>
@@ -15,6 +18,7 @@
       <w>onend</w>
       <w>onmove</w>
       <w>onstart</w>
+      <w>pred</w>
       <w>resizeend</w>
       <w>resizemove</w>
       <w>superagent</w>

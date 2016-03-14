@@ -11,21 +11,27 @@ const _color = Symbol('color');
 
 export default class LyphTemplateBox extends SvgEntity {
 
-	get x()  { return this.getVal('x') }
-	set x(v) { this.setVal('x', v)  }
-
-	get y()  { return this.getVal('y') }
-	set y(v) { this.setVal('y', v)  }
-
-	get width()  { return this.getVal('width') }
-	set width(v) { this.setVal('width', v) }
-
-	get height()  { return this.getVal('height') }
-	set height(v) { this.setVal('height', v)  }
+	// get x()  { return this.getVal('x') }
+	// set x(v) { this.setVal('x', v)  }
+	//
+	// get y()  { return this.getVal('y') }
+	// set y(v) { this.setVal('y', v)  }
+	//
+	// get width()  { return this.getVal('width') }
+	// set width(v) { this.setVal('width', v) }
+	//
+	// get height()  { return this.getVal('height') }
+	// set height(v) { this.setVal('height', v)  }
 
 	constructor(options) {
 		super(options);
-		Object.assign(this, pick(options, 'x', 'y', 'width', 'height'));
+		// Object.assign(this, pick(options, 'x', 'y', 'width', 'height'));
+
+		this.newProperty('x',        { initial: options.x,      isValid: isFinite });
+		this.newProperty('y',        { initial: options.y,      isValid: isFinite });
+		this.newProperty('width',    { initial: options.width,  isValid: isFinite });
+		this.newProperty('height',   { initial: options.height, isValid: isFinite });
+
 	}
 
 	createElement() {
@@ -51,15 +57,19 @@ export default class LyphTemplateBox extends SvgEntity {
 		});
 
 		/* alter DOM based on observed changes */
-		this.observeExpressions([[layerTemplate, {
-			x:      [['x'],      (x)      => x      ],
-			y:      [['y'],      (y)      => y      ],
-			width:  [['width'],  (width)  => width  ],
-			height: [['height'], (height) => height ]
-		}]], {
-			setter(element, key, val) { element.attr(key, val) },
-			ready: isFinite
-		});
+		for (let prop of ['x', 'y', 'width', 'height']) {
+			this.p(prop).onValue((v) => { layerTemplate.attr(prop, v) });
+		}
+
+		// this.observeExpressions([[layerTemplate, {
+		// 	x:      [['x'],      (x)      => x      ],
+		// 	y:      [['y'],      (y)      => y      ],
+		// 	width:  [['width'],  (width)  => width  ],
+		// 	height: [['height'], (height) => height ]
+		// }]], {
+		// 	setter(element, key, val) { element.attr(key, val) },
+		// 	ready: isFinite
+		// });
 
 		// TODO: react to things being dragged in the canvas by making pointerEvents be 'all'
 

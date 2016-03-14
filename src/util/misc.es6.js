@@ -6,7 +6,7 @@ function extractExpression(fn) {
 	return match[1];
 }
 
-export function assert(a) {
+export function assert(a, msg) {
 	let result;
 	try {
 		result = a();
@@ -14,7 +14,7 @@ export function assert(a) {
 		throw new Error(`Error while evaluating assertion "${extractExpression(a)}"!\n${event}`);
 	}
 	if (!result) {
-		throw new Error(`Assertion "${extractExpression(a)}" failed!`);
+		throw new Error(`Assertion "${extractExpression(a)}" failed!${msg ? '\n'+msg : ''}`);
 	}
 }
 

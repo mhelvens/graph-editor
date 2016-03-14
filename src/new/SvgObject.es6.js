@@ -6,24 +6,12 @@ import ValueTracker from './ValueTracker.es6.js';
 
 @abstract export default class SvgObject extends ValueTracker {
 
-	get dragging()  { return this.getVal('dragging') }
-	set dragging(v) { this.setVal('dragging', !!v)   }
-
-	get resizing()  { return this.getVal('resizing') }
-	set resizing(v) { this.setVal('resizing', !!v)   }
-
-	get hovering()  { return this.getVal('hovering') }
-	set hovering(v) { this.setVal('hovering', !!v)   }
-
-
-
 	constructor(options) {
 		super(options);
-		Object.assign(this, {
-			dragging: false,
-			resizing: false,
-			hovering: false
-		});
+
+		this.newProperty('dragging', { initial: false });
+		this.newProperty('resizing', { initial: false });
+		this.newProperty('hovering', { initial: false });
 	}
 
 

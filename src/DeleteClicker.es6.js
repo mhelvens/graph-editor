@@ -6,21 +6,18 @@ export default class DeleteClicker extends SvgObject {
 
 	static RADIUS = 10;
 
-	get hovering()  { return this.getVal('hovering') }
-	set hovering(v) { this.setVal('hovering', v)  }
-
 	constructor(options) {
 		super(options);
-		this.onClick = options.onClick;
-		this.hovering = false;
+		this.newEvent('click');
 	}
 
 	createElement() {
+		
 		/* main HTML */
 		const r = DeleteClicker.RADIUS;
 		let result = $.svg(`
 			<svg style="overflow: visible">
-				<circle cx="0" cy="0"></circle>
+				<circle cx="0" cy="0" r="${DeleteClicker.RADIUS}"></circle>
 				<line   x1="${-r/2}" y1="${-r/2}" x2="${ r/2}" y2="${ r/2}"></line>
 				<line   x1="${-r/2}" y1="${ r/2}" x2="${ r/2}" y2="${-r/2}"></line>
 			</svg>
@@ -38,17 +35,14 @@ export default class DeleteClicker extends SvgObject {
 			pointerEvents: 'none'
 		});
 
-		circle.mouseenter(() => { this.hovering = true  });
-		circle.mouseleave(() => { this.hovering = false });
-		circle.click((e) => { this.onClick(e) });
+		/* observables */
+		this.e('click').plug(circle.asKefirStream('click'));
+		this.p('hovering')
+		    .plug(circle.asKefirStream('mouseenter').map(()=>true ))
+		    .plug(circle.asKefirStream('mouseleave').map(()=>false));
 
 		/* alter DOM based on observed changes */
-		this.observeExpressions([
-			[circle, { r:  [['hovering'],  (hovering) => DeleteClicker.RADIUS + (hovering ? 1 : 0) ] }]
-		], {
-			setter(element, key, val) { element.attr(key, val) },
-			ready: isFinite
-		});
+		circle.attrPlug('r', this.p('hovering').map((hovering) => DeleteClicker.RADIUS + (hovering ? 1 : 0)));
 
 		return result;
 

@@ -1,6 +1,7 @@
-import {pick}   from 'lodash';
+import {pick, isFinite}   from 'lodash';
 import $        from 'jquery';
 import interact from '../libs/interact.js';
+import Kefir    from '../libs/kefir.es6.js';
 
 import {boundBy, abs, sw} from '../util/misc.es6.js';
 
@@ -16,20 +17,12 @@ export default class NodeCircle extends SvgEntity {
 	static DRAGGING_RADIUS = 16;
 	static SNAP_DISTANCE   = 20;
 
-	get x()  { return this.getVal('x') }
-	set x(v) { this.setVal('x', v)     }
-
-	get y()  { return this.getVal('y') }
-	set y(v) { this.setVal('y', v)     }
-
-	get hovering()  { return this.getVal('hovering') }
-	set hovering(v) { this.setVal('hovering', v)     }
-
 	constructor(options) {
 		super(options);
-		Object.assign(this, pick(options, 'x', 'y'), {
-			hovering: false
-		});
+
+		/* properties */
+		this.newProperty('x', { initial: options.x, isValid: isFinite });
+		this.newProperty('y', { initial: options.y, isValid: isFinite });
 	}
 
 	createElement() {
@@ -50,42 +43,30 @@ export default class NodeCircle extends SvgEntity {
 		});
 
 		/* observe values and alter view accordingly */
-		shape.mouseenter(() => { this.hovering = true  });
-		shape.mouseleave(() => { this.hovering = false });
-		this.observe('x', () => {
-			center.attr('cx', this.x);
-			shape .attr('cx', this.x);
-		});
-		this.observe('y', () => {
-			center.attr('cy', this.y);
-			shape .attr('cy', this.y);
-		});
-		this.observe('dragging', () => {
-			shape.attr('r', this.dragging
-				? NodeCircle.DRAGGING_RADIUS
-				: NodeCircle.IDLE_RADIUS
-			);
-		});
+		this.p('hovering')
+		    .plug(shape.asKefirStream('mouseenter').map(()=>true ))
+		    .plug(shape.asKefirStream('mouseleave').map(()=>false));
+		center.attrPlug('cx', this.p('x')).attrPlug('cy', this.p('y'));
+		shape .attrPlug('cx', this.p('x')).attrPlug('cy', this.p('y'));
+		shape .attrPlug('r', this.p('dragging').map((dragging) =>
+			dragging
+			? NodeCircle.DRAGGING_RADIUS
+			: NodeCircle.IDLE_RADIUS)
+		);
 
 		/* delete button */
 		let deleteClicker = this.createDeleteClicker();
 		deleteClicker.element.appendTo(result.children('.delete-clicker'));
-		this.observeExpressions([[deleteClicker.element, {
-			x: [['x'], (x) => x + 12 ],
-			y: [['y'], (y) => y - 12 ]
-		}]], {
-			setter(element, key, val) { element.attr(key, val) },
-			ready: isFinite
-		});
-		const showHideDeleteClicker = () => {
-			if (this.hovering || deleteClicker.hovering) {
-				deleteClicker.element.show();
-			} else {
-				deleteClicker.element.hide();
-			}
-		};
-		this         .observe('hovering', showHideDeleteClicker);
-		deleteClicker.observe('hovering', showHideDeleteClicker);
+
+		(deleteClicker.element)
+			.attrPlug('x', this.p('x').map(x => x + 12) )
+			.attrPlug('y', this.p('y').map(y => y - 12) );
+
+		(deleteClicker.element)
+			.cssPlug('display', Kefir.combine([
+				this.p('hovering'),
+				deleteClicker.p('hovering')
+			]).map(([a, b]) => (a || b) ? 'block' : 'none'));
 
 		/* drawing process with a tool */
 		interact(shape[0]).on('down', async (event) => {
@@ -104,7 +85,7 @@ export default class NodeCircle extends SvgEntity {
 			this.root.added.next(this.activeTool);
 
 		});
-		this.observe('hovering', () => {
+		this.p('hovering').onValue(() => {
 			if (this.root.activeTool) {
 				shape.css('cursor', 'pointer');
 			} else {
@@ -156,14 +137,16 @@ export default class NodeCircle extends SvgEntity {
 			// tracker: '.node.center',
 			autoScroll: true,
 			onstart: (event) => {
+
 				event.stopPropagation();
 
 				/* dragged things stay in front of other things */
 				this.moveToFront();
 
 				/* initialize interaction-local variables */
-				raw        = this.getVals('x', 'y');
+				raw        = pick(this, 'x', 'y');
 				parentRect = this.parent.boundingBox();
+
 			},
 			onmove: ({dx, dy}) => {
 
@@ -194,7 +177,8 @@ export default class NodeCircle extends SvgEntity {
 				visible.y = boundBy( parentRect.top,  parentRect.top  + parentRect.height )( visible.y );
 
 				/* set visible (x, y) based on snapping and restriction */
-				this.setVals(visible);
+				this.set(visible);
+
 			}
 		};
 	}
