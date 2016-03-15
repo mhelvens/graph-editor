@@ -11,6 +11,13 @@ import LayerTemplateBox  from './LayerTemplateBox.es6.js';
 import RotateClicker     from './RotateClicker.es6.js';
 
 
+
+
+function isRotation(v) { return _([0, 90, 180, 270]).includes(v) }
+
+
+
+
 export default class LyphTemplateBox extends SvgEntity {
 
 	get axisThickness() { return 15                                                                   }
@@ -20,14 +27,15 @@ export default class LyphTemplateBox extends SvgEntity {
 	layerTemplateBoxes = [];
 
 
-	@property({isValid: isFinite}) x;
-	@property({isValid: isFinite}) y;
-	@property({isValid: isFinite}) width;
-	@property({isValid: isFinite}) height;
-	@property({isValid: isFinite}) lx; // local (in percentages of parent size)
-	@property({isValid: isFinite}) ly;
-	@property({isValid: isFinite}) lwidth;
-	@property({isValid: isFinite}) lheight;
+	@property({isValid: isFinite  }) x;  ////////// global
+	@property({isValid: isFinite  }) y;
+	@property({isValid: isFinite  }) width;
+	@property({isValid: isFinite  }) height;
+	@property({isValid: isRotation, initial: 0}) rotation;
+	@property({isValid: isFinite  }) lx; ////////// local (in percentages of parent size)
+	@property({isValid: isFinite  }) ly;
+	@property({isValid: isFinite  }) lwidth;
+	@property({isValid: isFinite  }) lheight;
 
 	// TODO: rotation
 
@@ -36,7 +44,7 @@ export default class LyphTemplateBox extends SvgEntity {
 	constructor(options) {
 		super(options);
 
-		Object.assign(this, pick(options, 'x', 'y', 'width', 'height'));
+		Object.assign(this, pick(options, 'x', 'y', 'width', 'height', 'rotation'));
 
 		/* create the layers */
 		let resources = new Resources;
@@ -51,20 +59,25 @@ export default class LyphTemplateBox extends SvgEntity {
 	setParent(newParent) {
 		super.setParent(newParent);
 		for (let plug of this._pluggedIntoParent || []) { plug.unplug() }
-		const _px = this.parent.p('x');
-		const _py = this.parent.p('y');
+		const _px  = this.parent.p('x');
+		const _py  = this.parent.p('y');
 		const _pxd = _px.diff((prev, next) => next - prev, this.parent.x);
 		const _pyd = _py.diff((prev, next) => next - prev, this.parent.y);
-		const _pw = this.parent.p('width');
-		const _ph = this.parent.p('height');
-		const _x  = this.p('x');
-		const _y  = this.p('y');
-		const _w  = this.p('width');
-		const _h  = this.p('height');
-		const _lx = this.p('lx');
-		const _ly = this.p('ly');
-		const _lw = this.p('lwidth');
-		const _lh = this.p('lheight');
+		const _pw  = this.parent.p('width');
+		const _ph  = this.parent.p('height');
+		const _x   = this.p('x');
+		const _y   = this.p('y');
+		const _w   = this.p('width');
+		const _h   = this.p('height');
+		const _lx  = this.p('lx');
+		const _ly  = this.p('ly');
+		const _lw  = this.p('lwidth');
+		const _lh  = this.p('lheight');
+		// const _r   = this.p('rotation');
+		// const _lr  = this.p('lrotation');
+		// const _pr  = this.parent.p('rotation');
+		// const _prd = _pr.diff((prev, next) => (next - prev + 360) % 360, this.parent.rotation);
+		// const _lrd = _lr.diff((prev, next) => (next - prev + 360) % 360, this.parent.rotation);
 		this._pluggedIntoParent = [
 			_lx.plug(Kefir.combine([_x], [_pw, _px],   (x, pw, px) => (x - px) / pw)),
 			_ly.plug(Kefir.combine([_y], [_ph, _py],   (y, ph, py) => (y - py) / ph)),
@@ -80,6 +93,9 @@ export default class LyphTemplateBox extends SvgEntity {
 
 			_w .plug(Kefir.combine([_pw], [_lw],  (pw, lw) => pw * lw)),
 			_h .plug(Kefir.combine([_ph], [_lh],  (ph, lh) => ph * lh)),
+
+			// _r .plug(Kefir.combine([_prd], [_r],  (prd, r) => (r + prd + 360) % 360)),
+			// _r .plug(Kefir.combine([_lrd], [_r],  (lrd, r) => (r + lrd + 360) % 360)),
 		];
 	};
 
@@ -136,20 +152,63 @@ export default class LyphTemplateBox extends SvgEntity {
 			this.p(prop).onValue((v) => { lyphTemplate.attr(prop, v) });
 		}
 
-		nameSpacePath
-			.attrPlug('x',     this.p( 'x'           ).map(( x         ) => x + this.axisThickness)          )
-			.attrPlug('y',     this.p(['y', 'height']).map(([y, height]) => y + height - this.axisThickness) )
-			.attrPlug('width', this.p( 'width'       ).map(( width     ) => width - 2 * this.axisThickness)  );
 
-		axis
-			.attrPlug('x',     this.p( 'x'           )                                                       )
-			.attrPlug('y',     this.p(['y', 'height']).map(([y, height]) => y + height - this.axisThickness) )
-			.attrPlug('width', this.p( 'width'       )                                                       );
+		let rot = (rotation, {x, y, width, height}) => {
+			x -= this.x;
+			y -= this.y;
+			switch (rotation) {
+				case 90:  { [x, y, width, height] = [-y,  x, height, width] } break;
+				case 180: { [x, y, width, height] = [-x, -y, width, height] } break;
+				case 270: { [x, y, width, height] = [ y, -x, height, width] } break;
+			}
+			x += this.x;
+			y += this.y;
+			return {x, y, width, height};
+		};
 
-		axisMinus.attrPlug('x', this.p( 'x'           ).map(( x         ) => x + 1)                                 );
-		axisPlus .attrPlug('x', this.p(['x', 'width' ]).map(([x, width ]) => x + width - 1)                         );
-		axisLabel.attrPlug('x', this.p(['x', 'width' ]).map(([x, width ]) => x + width / 2)                         );
-		axisText .attrPlug('y', this.p(['y', 'height']).map(([y, height]) => y + height - this.axisThickness - 0.5) );
+		let posObj = this.p(['x', 'y', 'width', 'height', 'rotation']).map(([x, y, width, height, rotation]) => ({
+			x, y, width, height, rotation
+		}));
+
+		let nameSpacePathPos = posObj.map(({x, y, width, height, rotation}) => rot(rotation, {
+			x:      x + this.axisThickness,
+			y:      y + height - this.axisThickness,
+			width:  width - 2 * this.axisThickness,
+			height: width - 2 * this.axisThickness
+		}));
+		for (let key of ['x', 'y', 'width', 'height']) { nameSpacePath.attrPlug(key, nameSpacePathPos.map(o => o[key])) }
+
+		let axisPos = posObj.map(({x, y, width, height, rotation}) => rot(rotation, {
+			x:      x,
+			y:      y + height - this.axisThickness,
+			width:  width,
+			height: this.axisThickness
+		}));
+		for (let key of ['x', 'y', 'width', 'height']) { axis.attrPlug(key, axisPos.map(o => o[key])) }
+
+		let axisMinusPos = posObj.map(({x, y, width, height, rotation}) => rot(rotation, {
+			x: x + 1,
+			y: y + height - this.axisThickness - 0.5
+		}));
+		for (let key of ['x', 'y']) { axisMinus.attrPlug(key, axisMinusPos.map(o => o[key])) }
+
+		let axisPlusPos = posObj.map(({x, y, width, height, rotation}) => rot(rotation, {
+			x: x + width - 1,
+			y: y + height - this.axisThickness - 0.5
+		}));
+		for (let key of ['x', 'y']) { axisPlus.attrPlug(key, axisPlusPos.map(o => o[key])) }
+
+		let axisLabelPos = posObj.map(({x, y, width, height, rotation}) => rot(rotation, {
+			x: x + width / 2,
+			y: y + height - this.axisThickness - 0.5
+		}));
+		for (let key of ['x', 'y']) { axisLabel.attrPlug(key, axisLabelPos.map(o => o[key])) }
+
+
+		// axisMinus.attrPlug('x', this.p( 'x'           ).map(( x         ) => x + 1)                                 );
+		// axisPlus .attrPlug('x', this.p(['x', 'width' ]).map(([x, width ]) => x + width - 1)                         );
+		// axisLabel.attrPlug('x', this.p(['x', 'width' ]).map(([x, width ]) => x + width / 2)                         );
+		// axisText .attrPlug('y', this.p(['y', 'height']).map(([y, height]) => y + height - this.axisThickness - 0.5) );
 
 
 		/* add layer elements and change their positioning based on observed changes */
@@ -193,7 +252,7 @@ export default class LyphTemplateBox extends SvgEntity {
 			]).map(([h1, h2, d]) => (h1 || h2) && !d ? 'block' : 'none'));
 
 		rotateClicker.clicks.onValue(() => {
-			console.log('TODO: Rotate');
+			this.rotation = (this.rotation + 90) % 360;
 		});
 
 		/* return result */

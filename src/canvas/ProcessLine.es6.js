@@ -42,9 +42,8 @@ export default class ProcessLine extends SvgEntity {
 		const lines = result.children('line');
 
 		/* alter DOM based on observed changes */
-		this.p('hovering')
-		    .plug(hoverArea.asKefirStream('mouseenter').map(()=>true ))
-		    .plug(hoverArea.asKefirStream('mouseleave').map(()=>false));
+		this.p('hovering').plug(hoverArea.asKefirStream('mouseenter').map(()=>true ));
+		this.p('hovering').plug(hoverArea.asKefirStream('mouseleave').map(()=>false));
 		lines
 			.attrPlug('x1', this.source.p('x'))
 			.attrPlug('y1', this.source.p('y'))

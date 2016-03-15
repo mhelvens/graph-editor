@@ -52,9 +52,8 @@ export default class NodeCircle extends SvgEntity {
 		});
 
 		/* observe values and alter view accordingly */
-		this.p('hovering')
-		    .plug(shape.asKefirStream('mouseenter').map(()=>true ))
-		    .plug(shape.asKefirStream('mouseleave').map(()=>false));
+		this.p('hovering').plug(shape.asKefirStream('mouseenter').map(()=>true ));
+		this.p('hovering').plug(shape.asKefirStream('mouseleave').map(()=>false));
 		center.attrPlug('cx', this.p('x')).attrPlug('cy', this.p('y'));
 		shape .attrPlug('cx', this.p('x')).attrPlug('cy', this.p('y'));
 		shape .attrPlug('r', this.p('dragging').map((dragging) =>
