@@ -1,8 +1,10 @@
 /* library imports */
 import {bootstrap}                          from 'angular2/bootstrap';
 import {Component, provide, enableProdMode} from 'angular2/core';
-import $                                    from 'jquery';
+import $                                    from './libs/jquery.es6.js';
 import GoldenLayout                         from './libs/golden-layout.es6.js';
+import Kefir                                from './libs/kefir.es6.js';
+import {pick}                               from 'lodash';
 
 /* local imports */
 import LyphCanvasComponent              from './angular/LyphCanvasComponent.es6.js';
@@ -99,12 +101,20 @@ import './index.scss';
 
 	/* populating the panels */
 	leftPanel.css('overflow-y', 'scroll');
-	$('bootstrap > misc-tool-buttons-list')    .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
-	$('bootstrap > process-type-button-list')  .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
-	$('bootstrap > lyph-template-button-list') .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
-	$('bootstrap > canonical-tree-button-list').detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
-	$('bootstrap > lyph-canvas')               .detach().appendTo(mainPanel);
+	$('bootstrap > misc-tool-buttons-list')      .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
+	$('bootstrap > process-type-button-list')    .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
+	$('bootstrap > lyph-template-button-list')   .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
+	$('bootstrap > canonical-tree-button-list')  .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
+	let lyphCanvas = $('bootstrap > lyph-canvas').detach().appendTo(mainPanel).data('controller');
 
+	/* propagating resize events */
+	Kefir.merge([
+		Kefir.once(),
+		$(window).asKefirStream('resize'),
+	    Kefir.fromEvents(mainPanel.data('container'), 'resize'),
+	]).onValue(() => {
+		Object.assign(lyphCanvas, pick(lyphCanvas.element.getBoundingClientRect(), 'width', 'height'));
+	});
 
 	/* Done */
 	console.info("Done.");

@@ -1,5 +1,6 @@
 import {Component, ChangeDetectorRef, ElementRef, EventEmitter} from '../../node_modules/angular2/core';
-import $                                                        from 'jquery';
+import $                                                        from '../libs/jquery.es6.js';
+import {isFinite}                                               from 'lodash';
 import interact                                                 from '../libs/interact.js';
 
 import {sw} from '../util/misc.es6.js';
@@ -44,7 +45,12 @@ import ProcessLine       from '../canvas/ProcessLine.es6.js';
 })
 export default class LyphCanvasComponent extends SVGEntity {
 
-	@property({initial: false}) draggingSomething;
+	@property({initial: false               }) draggingSomething;
+	@property({initial: 0, isValid: isFinite}) x; // TODO: figure out why settable: false causes a bug
+	@property({initial: 0, isValid: isFinite}) y;
+	@property({isValid: isFinite            }) width;
+	@property({isValid: isFinite            }) height;
+	// TODO: lx, ly, lwidth, lheight (just for consistency in the interface? Or maybe root doesn't need them.)
 
 	added = new EventEmitter;
 
@@ -57,6 +63,7 @@ export default class LyphCanvasComponent extends SVGEntity {
 			nativeElement,
 			changeDetectorRef
 		});
+		$(nativeElement).data('controller', this);
 	}
 
 	createElement() {

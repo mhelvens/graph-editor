@@ -7,6 +7,9 @@ import SvgObject     from './SvgObject.es6.js';
 import DeleteClicker from './DeleteClicker.es6.js';
 
 
+const deleteClicker = Symbol('deleteClicker');
+
+
 @abstract export default class SvgEntity extends SvgObject {
 
 	model;
@@ -49,32 +52,18 @@ import DeleteClicker from './DeleteClicker.es6.js';
 		this.element.remove();
 	}
 
-	createDeleteClicker() {
-		let result = new DeleteClicker();
-		result.clicks.onValue((event) => {
-			event.stopPropagation();
-			this.delete();
-		});
-		return result;
+	deleteClicker() {
+		if (!this[deleteClicker]) {
+			this[deleteClicker] = new DeleteClicker();
+			this[deleteClicker].clicks.onValue((event) => {
+				event.stopPropagation();
+				this.delete();
+			});
+		}
+		return this[deleteClicker];
 	}
 
 	// to override
-	appendChildElement(newChild) { assert(false) }
-
-	// // to override
-	// innerToOuter(coords) {
-	// 	return coords;
-	// }
-	//
-	// // final
-	// innerToWorld(coords) {
-	// 	return this.outerToWorld(this.innerToOuter(coords));
-	// }
-	//
-	// // final
-	// outerToWorld(coords) {
-	// 	return (this.parent ? this.parent.innerToWorld : identity)(coords);
-	// }
-
+	appendChildElement(newChild) { assert(()=>false) }
 
 }

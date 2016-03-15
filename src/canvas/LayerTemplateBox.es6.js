@@ -1,33 +1,26 @@
-import _, {pick, isFinite, identity} from 'lodash';
-import $                             from '../libs/jquery.es6.js';
-import {getHsvGolden}                from 'golden-colors';
+import _, {pick, isFinite, identity, includes} from 'lodash';
+import $                                       from '../libs/jquery.es6.js';
+import {getHsvGolden}                          from 'golden-colors';
 
 import {property} from './ValueTracker.es6.js';
 import SvgEntity  from './SvgEntity.es6.js';
-import NodeCircle from "./NodeCircle.es6.js";
+import NodeCircle from './NodeCircle.es6.js';
 
 
 const _color = Symbol('color');
 
 
-export default class LyphTemplateBox extends SvgEntity {
-
+export default class LayerTemplateBox extends SvgEntity {
 
 	@property({isValid: isFinite}) x;
 	@property({isValid: isFinite}) y;
 	@property({isValid: isFinite}) width;
 	@property({isValid: isFinite}) height;
+	// TODO: l-versions of these four properties? For now, the LyphTemplateBox has full control.
 
 	constructor(options) {
 		super(options);
-
 		Object.assign(this, pick(options, 'x', 'y', 'width', 'height'));
-
-		// this.newProperty('x',        { initial: options.x,      isValid: isFinite });
-		// this.newProperty('y',        { initial: options.y,      isValid: isFinite });
-		// this.newProperty('width',    { initial: options.width,  isValid: isFinite });
-		// this.newProperty('height',   { initial: options.height, isValid: isFinite });
-
 	}
 
 	createElement() {
@@ -53,19 +46,11 @@ export default class LyphTemplateBox extends SvgEntity {
 		});
 
 		/* alter DOM based on observed changes */
-		for (let prop of ['x', 'y', 'width', 'height']) {
-			this.p(prop).onValue((v) => { layerTemplate.attr(prop, v) });
-		}
-
-		// this.observeExpressions([[layerTemplate, {
-		// 	x:      [['x'],      (x)      => x      ],
-		// 	y:      [['y'],      (y)      => y      ],
-		// 	width:  [['width'],  (width)  => width  ],
-		// 	height: [['height'], (height) => height ]
-		// }]], {
-		// 	setter(element, key, val) { element.attr(key, val) },
-		// 	ready: isFinite
-		// });
+		layerTemplate
+			.attrPlug('x',      this.p('x'))
+			.attrPlug('y',      this.p('y'))
+			.attrPlug('width',  this.p('width'))
+			.attrPlug('height', this.p('height'));
 
 		// TODO: react to things being dragged in the canvas by making pointerEvents be 'all'
 
@@ -102,13 +87,6 @@ export default class LyphTemplateBox extends SvgEntity {
 
 	appendChildElement(newChild) {
 		this.element.children('.child-container').append(newChild.element);
-	}
-
-	innerToOuter({x, y}) {
-		return super.innerToOuter({
-			x: this.x + x,
-			y: this.y + y
-		});
 	}
 
 }

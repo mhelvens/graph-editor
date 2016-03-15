@@ -8,7 +8,7 @@ import {boundBy, abs, sw} from '../util/misc.es6.js';
 import {property}       from './ValueTracker.es6.js';
 import SvgEntity        from './SvgEntity.es6.js';
 import LayerTemplateBox from './LayerTemplateBox.es6.js';
-import ProcessLine       from './ProcessLine.es6.js';
+import ProcessLine      from './ProcessLine.es6.js';
 
 
 export default class NodeCircle extends SvgEntity {
@@ -17,11 +17,20 @@ export default class NodeCircle extends SvgEntity {
 	static DRAGGING_RADIUS = 16;
 	static SNAP_DISTANCE   = 20;
 
+	@property({isValid: isFinite}) lx;
+	@property({isValid: isFinite}) ly;
 	@property({isValid: isFinite}) x;
 	@property({isValid: isFinite}) y;
+	// TODO: lx, ly be percentages (with epsilon-based equality); for now, they're in px
 
 	constructor(options) {
 		super(options);
+
+		this.p('lx').plug(Kefir.combine([this.p ('x'), this.parent.p('x')], (x, px)  =>  x - px));
+		this.p('ly').plug(Kefir.combine([this.p ('y'), this.parent.p('y')], (y, py)  =>  y - py));
+		this.p ('x').plug(Kefir.combine([this.p('lx'), this.parent.p('x')], (lx, px) => lx + px));
+		this.p ('y').plug(Kefir.combine([this.p('ly'), this.parent.p('y')], (ly, py) => ly + py));
+
 		Object.assign(this, pick(options, 'x', 'y'));
 	}
 
@@ -55,7 +64,7 @@ export default class NodeCircle extends SvgEntity {
 		);
 
 		/* delete button */
-		let deleteClicker = this.createDeleteClicker();
+		let deleteClicker = this.deleteClicker();
 		deleteClicker.element.appendTo(result.children('.delete-clicker'));
 
 		(deleteClicker.element)
@@ -182,13 +191,6 @@ export default class NodeCircle extends SvgEntity {
 
 			}
 		};
-	}
-
-	innerToOuter({x, y}) {
-		return super.innerToOuter({
-			x: this.x + x,
-			y: this.y + y
-		});
 	}
 
 }

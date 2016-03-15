@@ -1,6 +1,6 @@
-import {isUndefined, isFunction, isPlainObject, isArray, set} from 'lodash';
-import Kefir                                                  from '../libs/kefir.es6.js';
-import {assert}                                               from '../util/misc.es6.js';
+import _, {isUndefined, isFunction, isPlainObject, isArray, set} from 'lodash';
+import Kefir                                                     from '../libs/kefir.es6.js';
+import {assert}                                                  from '../util/misc.es6.js';
 
 
 /* symbols to private members */
@@ -99,13 +99,18 @@ export default class ValueTracker {
 	 * @method
 	 * @param  {String}                   name           - the name of the event stream to retrieve
 	 * @param  {Boolean}                 [settable=true] - whether the value can be manually set
-	 * @param  {*}                       [initial]       - the initial value of this property
 	 * @param  {function(*,*):Boolean}   [isEqual]       - a predicate function by which to test for duplicate values
 	 * @param  {function(*):Boolean}     [isValid]       - a predicate function to validate a given value
+	 * @param  {*}                       [initial]       - the initial value of this property
 	 *
 	 * @return {Kefir.Property} - the property associated with the given name
 	 */
-	newProperty(name, {settable, initial, isEqual, isValid = ()=>true} = {}) {
+	newProperty(name, {
+		settable = true,
+		isEqual  = _.isEqual,
+		isValid  = ()=>true,
+		initial,
+	} = {}) {
 		this[initialize]();
 
 		/* is the property name already taken? */
@@ -113,9 +118,6 @@ export default class ValueTracker {
 			`There is already an event '${name}' on this object.`);
 		assert(() => !this[properties][name],
 			`There is already a property '${name}' on this object.`);
-
-		/* default value for 'settable' */
-		if (isUndefined(settable)) { settable = true }
 
 		/* define the bus which manages the property */
 		let bus = new Kefir.Bus();
@@ -137,7 +139,9 @@ export default class ValueTracker {
 				let filteredObservable = isValid ? observable.filter(isValid) : observable;
 				plugged.set(observable, filteredObservable);
 				bus.plug(filteredObservable);
-				return property;
+				return {
+					unplug: () => { property.unplug(observable) }
+				};
 			},
 
 			unplug(observable) {
@@ -146,22 +150,18 @@ export default class ValueTracker {
 				return property;
 			},
 
-			get() { return currentValue },
+			get() { return currentValue }
 
-			set: settable ? ((value) => {
+		}, settable && {
+
+			set(value) {
 				if (!isValid || isValid(value)) {
 					bus.emit(value);
 				}
 				return property;
-			}) : undefined
+			}
 
 		});
-
-		// /* add the property to the object interface */
-		// Object.defineProperty(this, name, {
-		// 	get: property.get,
-		// 	set: settable ? property.set : undefined
-		// });
 
 		/* make the property active; it doesn't work if this isn't done (the nature of Kefir.js) */
 		property.run();

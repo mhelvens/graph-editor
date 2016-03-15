@@ -1,15 +1,20 @@
 <component name="ProjectDictionaryState">
   <dictionary name="mhelvens">
     <words>
+      <w>artefact</w>
       <w>artefacts</w>
       <w>coords</w>
+      <w>darkblue</w>
       <w>darkred</w>
       <w>defs</w>
       <w>dropzone</w>
       <w>interactable</w>
       <w>jsviews</w>
       <w>kefir</w>
+      <w>lheight</w>
+      <w>lwidth</w>
       <w>lyph</w>
+      <w>miterlimit</w>
       <w>mouseenter</w>
       <w>mouseleave</w>
       <w>ondragenter</w>
