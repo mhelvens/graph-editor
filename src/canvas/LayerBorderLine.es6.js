@@ -1,19 +1,27 @@
-import {pick, isFinite} from 'lodash';
-import $                from '../libs/jquery.es6.js';
-import Kefir            from '../libs/kefir.es6.js';
+import _, {pick, isFinite} from 'lodash';
+import $                   from '../libs/jquery.es6.js';
+import Kefir               from '../libs/kefir.es6.js';
 
 import {sw, swf} from '../util/misc.es6.js';
 
+import {property} from './ValueTracker.es6.js';
 import SvgEntity  from './SvgEntity.es6.js';
 
 
 const absoluteSide = Symbol('absoluteSide');
 
 
+const isOrientation = (v) => _(['horizontal', 'vertical']).includes(v);
+
+
 export default class LayerBorderLine extends SvgEntity {
 
 	layer;
 	side;
+	handle;
+
+	@property({isValid: isOrientation}) orientation;
+	@property({isValid: isFinite     }) position;
 
 	constructor(options) {
 		super(options);
@@ -28,6 +36,26 @@ export default class LayerBorderLine extends SvgEntity {
 			plus:  swf({ 0: 'right',  90: 'bottom', 180: 'left',   270: 'top'    }),
 			minus: swf({ 0: 'left',   90: 'top',    180: 'right',  270: 'bottom' })
 		}));
+
+		/* auto-update orientation and position property */
+		this.p('orientation').plug(this[absoluteSide].map(swf({
+			bottom: 'horizontal',
+			top:    'horizontal',
+			left:   'vertical',
+			right:  'vertical'
+		})));
+		this.p('position').plug(Kefir.combine([
+			this[absoluteSide],
+			this.layer.p('x'),
+			this.layer.p('y'),
+			this.layer.p('width'),
+			this.layer.p('height')
+		], (aSide, x, y, width, height) => sw(aSide)({
+			bottom: y + height,
+			right:  x + width,
+			top:    y,
+			left:   x
+		})));
 	}
 
 	createElement() {
@@ -41,11 +69,11 @@ export default class LayerBorderLine extends SvgEntity {
 
 		/* extract and style important elements */
 		const line = result.children('line.border').css({
-			stroke:        'darkgreen', // TODO: make invisible except for hover events
-			strokeWidth:    3,
+			stroke:        'transparent', // TODO: make invisible except for hover events
+			strokeWidth:    1,
 			pointerEvents: 'none'
 		});
-		const hoverArea = result.children('line.hover-area').css({
+		this.handle = result.children('line.hover-area').css({
 			stroke:        'transparent',
 			strokeWidth:    11,
 			pointerEvents: 'all'
@@ -53,8 +81,12 @@ export default class LayerBorderLine extends SvgEntity {
 		const lines = result.children('line');
 
 		/* alter DOM based on observed changes */
-		this.p('hovering').plug(hoverArea.asKefirStream('mouseenter').map(()=>true ));
-		this.p('hovering').plug(hoverArea.asKefirStream('mouseleave').map(()=>false));
+		this.p('hovering').plug(this.handle.asKefirStream('mouseenter').map(()=>true ));
+		this.p('hovering').plug(this.handle.asKefirStream('mouseleave').map(()=>false));
+		this.p('orientation').onValue((orientation) => {
+			this.handle.toggleClass('horizontal-border', orientation === 'horizontal');
+			this.handle.toggleClass('vertical-border',   orientation === 'vertical'  );
+		});
 
 		let x1, y1, x2, y2;
 		let positioning = Kefir.combine([
@@ -78,58 +110,5 @@ export default class LayerBorderLine extends SvgEntity {
 		/* return result */
 		return result;
 	}
-
-	// resizable() { // TODO: write resizable method to only allow up-and-down
-	// 	let raw;
-	// 	return {
-	// 		handle: '.lyphTemplate',
-	// 		edges: { left: true, right: true, bottom: true, top: true },
-	// 		onstart: (event) => {
-	// 			event.stopPropagation();
-	// 			this.moveToFront();
-	//
-	// 			/* initialize interaction-local variables */
-	// 			raw  = pick(this, 'x', 'y', 'width', 'height');
-	// 		},
-	// 		onmove: ({rect, edges}) => {
-	//
-	// 			let proposedRect = this.pageToCanvas(rect);
-	//
-	// 			/* update raw coordinates */
-	// 			raw.width  = Math.max(proposedRect.width,  this.minWidth );
-	// 			raw.height = Math.max(proposedRect.height, this.minHeight);
-	// 			if (edges.left) {
-	// 				raw.x = proposedRect.left - (raw.width - proposedRect.width);
-	// 			}
-	// 			if (edges.top) {
-	// 				raw.y = proposedRect.top  - (raw.height - proposedRect.height);
-	// 			}
-	//
-	// 			/* initialize visible coordinates */
-	// 			let visible = { ...raw };
-	//
-	// 			// TODO: snapping
-	//
-	// 			/* restriction correction */
-	// 			if (edges.left && visible.x < this.parent.x) {
-	// 				visible.width = (visible.x + visible.width) - this.parent.x;
-	// 				visible.x = this.parent.x;
-	// 			}
-	// 			if (edges.top && visible.y < this.parent.y) {
-	// 				visible.height = (visible.y + visible.height) - this.parent.y;
-	// 				visible.y = this.parent.y;
-	// 			}
-	// 			if (edges.right && visible.x + visible.width > this.parent.x + this.parent.width) {
-	// 				visible.width = (this.parent.x + this.parent.width) - visible.left;
-	// 			}
-	// 			if (edges.bottom && visible.y + visible.height > this.parent.y + this.parent.height) {
-	// 				visible.height = (this.parent.y + this.parent.height) - visible.y;
-	// 			}
-	//
-	// 			/* set visible (x, y) based on snapping and restriction */
-	// 			this.set(visible);
-	// 		}
-	// 	};
-	// }
 
 }

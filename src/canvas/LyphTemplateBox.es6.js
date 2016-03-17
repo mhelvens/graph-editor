@@ -1,9 +1,10 @@
 import _, {pick, range, zip, sortBy, isFinite, clone} from 'lodash';
 import Kefir                                          from '../libs/kefir.es6.js';
 import $                                              from '../libs/jquery.es6.js';
+import interact                                       from '../libs/interact.js';
 
-import {boundBy, sw, uniqueId} from '../util/misc.es6.js';
-import Resources               from '../Resources.es6.js';
+import {boundBy, sw, uniqueId, inbetween} from '../util/misc.es6.js';
+import Resources                          from '../Resources.es6.js';
 
 import {property}        from './ValueTracker.es6.js';
 import SvgEntity         from './SvgEntity.es6.js';
@@ -101,7 +102,7 @@ export default class LyphTemplateBox extends SvgEntity {
 				<svg class="axis">
 					<defs>
 						<clipPath id="${clipPathId}">
-							<rect class="name-space" x="0" y="0" height="100%" width="100%"></rect>
+							<rect x="0" y="0" height="100%" width="100%"></rect>
 						</clipPath>
 					</defs>
 					<text class="minus" stroke="white"> − </text>
@@ -180,7 +181,7 @@ export default class LyphTemplateBox extends SvgEntity {
 			return {x, y, width, height};
 		};
 
-		let posObj = this.p(['x', 'y', 'width', 'height', 'rotation'])
+		let posObj = this.p(['x', 'y', 'width', 'height', 'rotation']) // TODO: un-duplicate this code
              .map(([x, y, width, height, rotation]) => ({ x, y, width, height, rotation }));
 
 		let axisPos = posObj.map(({x, y, width, height, rotation}) => sw(rotation)({
@@ -269,15 +270,21 @@ export default class LyphTemplateBox extends SvgEntity {
 	        .attrPlug('y',           axisPos.map(o => o.plusY      ))
             .attrPlug('text-anchor', axisPos.map(o => o.plusAnchor ));
 
+
+
 		/* add layer elements and change their positioning based on observed changes */
+		// TODO: make layers 'independent' like the other entities;
+		//     : give them lwidth, lheight, etc.
+		//     : those can be used for the 'required' layer thickness, rather than an even divide
+		//     : make sure to create a 'container rectangle' concept, so that the layers can ignore the lyph-template axis
 		for (let lTBox of this.layerTemplateBoxes) {
-			const layerHeight = (height) => (height - this.axisThickness) / (this.model ? this.model.layers.length : 5);
+			const layerThickness = (height) => (height - this.axisThickness) / (this.model ? this.model.layers.length : 5);
 			result.children('.child-container').append(lTBox.element);
 			let layerPos = posObj.map(({x, y, width, height, rotation}) => layerRot(rotation)({
 				x: x,
-				y: y + (this.layerTemplateBoxes.length - lTBox.model.position) * layerHeight(height),
+				y: y + (this.layerTemplateBoxes.length - lTBox.model.position) * layerThickness(height),
 				width:  width,
-				height: layerHeight(height)
+				height: layerThickness(height)
 			}));
 			lTBox.p('y')     .plug(layerPos.map(o => o.y     ));
 			lTBox.p('x')     .plug(layerPos.map(o => o.x     ));
@@ -285,19 +292,48 @@ export default class LyphTemplateBox extends SvgEntity {
 			lTBox.p('height').plug(layerPos.map(o => o.height));
 		}
 
+
+
 		/* draggable layer dividers */
 		// TODO: put these borders everywhere (not just in between layers),
 		//     : and they can act as snap-targets too.
-		for (let ltBox of _(this.layerTemplateBoxes).initial()) {
+		for (let [ltBox, joiningLtBox] of inbetween(this.layerTemplateBoxes)) {
 			let border = new LayerBorderLine({
 				parent: this,
-				layer: ltBox,
-				side: 'outer',
-				model: { type: 'Border', id: -1 } // TODO: real border model
+				layer : ltBox,
+				side  : 'outer',
+				model : { type: 'Border', id: -1 } // TODO: real border model
 			});
 			this.root.appendChildElement(border);
 
+			interact(border.handle[0]).draggable({
+				onstart: (event) => {
+					event.stopPropagation();
+					this.moveToFront();
+				},
+				onmove: ({dx, dy}) => {
+
+					switch (border.orientation) {
+						case 'horizontal': {
+
+							console.log('TODO: horizontal border dragging:', border.position);
+
+						} break;
+						case 'vertical': {
+
+							console.log('TODO: vertical border dragging', border.position);
+
+						} break;
+					}
+
+					// /* restriction correction */
+					// visible.x = boundBy( rootRect.left, rootRect.left + rootRect.width  - this.width  )( visible.x );
+					// visible.y = boundBy( rootRect.top,  rootRect.top  + rootRect.height - this.height )( visible.y );
+
+				}
+			});
 		}
+
 
 
 		/* delete clicker (not rotated) */

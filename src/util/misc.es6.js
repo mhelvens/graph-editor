@@ -86,3 +86,5 @@ export const boundBy = (min, max) => (val) => Math.max(min, Math.min(max, val));
 export const min = Math.min;
 export const max = Math.max;
 export const abs = Math.abs;
+
+export const inbetween = (a) => zip(initial(a), tail(a));
