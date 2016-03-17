@@ -1,3 +1,5 @@
+import {zip, initial, tail} from 'lodash';
+
 function extractExpression(fn) {
 	let match = fn.toString().match(/function\s*\(.*?\)\s*\{\s*return\s*(.*?)\s*?;\s*\}/);
 	if (!match) { match = fn.toString().match(/function\s*\(.*?\)\s*\{\s*(.*?)\s*\}/) }
@@ -71,11 +73,13 @@ export const noWhitespaceBetweenTags = (strings, ...values) => {
 	return result.join('');
 };
 
-export const sw = (val) => (map) => {
+export const sw = (val, {autoInvoke = true} = {}) => (map) => {
 	let result = ( (val in map) ? map[val] : map.default );
-	if (typeof result === 'function') { result = result() }
+	if (autoInvoke && typeof result === 'function') { result = result() }
 	return result;
 };
+
+export const swf = (map, options) => (val) => sw(val, options)(map);
 
 export const boundBy = (min, max) => (val) => Math.max(min, Math.min(max, val));
 

@@ -1,26 +1,42 @@
 import _, {pick, isFinite, identity, includes} from 'lodash';
 import $                                       from '../libs/jquery.es6.js';
 import {getHsvGolden}                          from 'golden-colors';
+import Kefir                                   from '../libs/kefir.es6.js';
 
 import {property} from './ValueTracker.es6.js';
 import SvgEntity  from './SvgEntity.es6.js';
-import NodeCircle from './NodeCircle.es6.js';
 
 
 const _color = Symbol('color');
 
 
+function isRotation(v) { return _([0, 90, 180, 270]).includes(v) }
+
+
 export default class LayerTemplateBox extends SvgEntity {
 
-	@property({isValid: isFinite}) x;
-	@property({isValid: isFinite}) y;
-	@property({isValid: isFinite}) width;
-	@property({isValid: isFinite}) height;
+	@property({isValid: isFinite})               x;
+	@property({isValid: isFinite})               y;
+	@property({isValid: isFinite})               width;
+	@property({isValid: isFinite})               height;
+	@property({isValid: isRotation, initial: 0}) rotation;
+	// @property({isValid: isFinite})               thickness;
+
+
 	// TODO: l-versions of these four properties? For now, the LyphTemplateBox has full control.
 
 	constructor(options) {
 		super(options);
 		Object.assign(this, pick(options, 'x', 'y', 'width', 'height'));
+
+		this.p('rotation').plug(this.parent.p('rotation'));
+
+		// const _t = this.p('thickness');
+		// const _r = this.p('rotation');
+		// const _w = this.p('width');
+		// const _h = this.p('height');
+		// _t.plug(Kefir.combine([_r, _w, _h], (r, w, h) => (r % 180 === 0) ? h : w));
+		// _w.plug(Kefir.combine());
 	}
 
 	createElement() {

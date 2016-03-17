@@ -22,7 +22,7 @@ export default class ValueTracker {
 		if (this[events]) { return }
 		this[events]     = {};
 		this[properties] = {};
-		this.newEvent('destroy');
+		this.newEvent('delete');
 		for (let [key, options] of Object.entries(this.constructor[events]     || {})) { this.newEvent   (key, options) }
 		for (let [key, options] of Object.entries(this.constructor[properties] || {})) { this.newProperty(key, options) }
 	}
@@ -165,7 +165,7 @@ export default class ValueTracker {
 
 		/* make the property active; it doesn't work if this isn't done (the nature of Kefir.js) */
 		property.run();
-		this.e('destroy').onValue(bus.end);
+		this.e('delete').onValue(bus.end);
 
 		/* return the property */
 		return property;

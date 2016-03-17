@@ -8,7 +8,7 @@ import DeleteClicker from './DeleteClicker.es6.js';
 
 
 const deleteClicker = Symbol('deleteClicker');
-
+const deleted       = Symbol('deleted');
 
 @abstract export default class SvgEntity extends SvgObject {
 
@@ -22,6 +22,7 @@ const deleteClicker = Symbol('deleteClicker');
 		Object.assign(this, pick(options, 'model'));
 		this.setParent(options.parent);
 		this.root.p('draggingSomething').plug(this.p('dragging'));
+		this.root.p('resizingSomething').plug(this.p('resizing'));
 	}
 
 	setParent(newParent) {
@@ -47,7 +48,10 @@ const deleteClicker = Symbol('deleteClicker');
 	}
 
 	delete() {
-		this.trigger('destroy');
+		if (this[deleted]) { return }
+		this[deleted] = true;
+		this.trigger('delete');
+		for (let child of this.children) { child.delete() }
 		this.parent.children.delete(this);
 		this.element.remove();
 	}
@@ -65,5 +69,6 @@ const deleteClicker = Symbol('deleteClicker');
 
 	// to override
 	appendChildElement(newChild) { assert(()=>false) }
+
 
 }

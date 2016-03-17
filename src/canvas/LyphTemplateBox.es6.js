@@ -1,21 +1,18 @@
-import _, {pick, range, zip, sortBy, isFinite} from 'lodash';
-import Kefir                                   from '../libs/kefir.es6.js';
-import $                                       from '../libs/jquery.es6.js';
+import _, {pick, range, zip, sortBy, isFinite, clone} from 'lodash';
+import Kefir                                          from '../libs/kefir.es6.js';
+import $                                              from '../libs/jquery.es6.js';
 
-import {assert, boundBy} from '../util/misc.es6.js';
-import Resources         from '../Resources.es6.js';
+import {boundBy, sw, uniqueId} from '../util/misc.es6.js';
+import Resources               from '../Resources.es6.js';
 
 import {property}        from './ValueTracker.es6.js';
 import SvgEntity         from './SvgEntity.es6.js';
 import LayerTemplateBox  from './LayerTemplateBox.es6.js';
 import RotateClicker     from './RotateClicker.es6.js';
-
-
+import LayerBorderLine   from './LayerBorderLine.es6.js';
 
 
 function isRotation(v) { return _([0, 90, 180, 270]).includes(v) }
-
-
 
 
 export default class LyphTemplateBox extends SvgEntity {
@@ -26,19 +23,16 @@ export default class LyphTemplateBox extends SvgEntity {
 
 	layerTemplateBoxes = [];
 
-
-	@property({isValid: isFinite  }) x;  ////////// global
-	@property({isValid: isFinite  }) y;
-	@property({isValid: isFinite  }) width;
-	@property({isValid: isFinite  }) height;
+	@property({isValid: isFinite              }) x;  ////////// global
+	@property({isValid: isFinite              }) y;
+	@property({isValid: isFinite              }) width;
+	@property({isValid: isFinite              }) height;
 	@property({isValid: isRotation, initial: 0}) rotation;
-	@property({isValid: isFinite  }) lx; ////////// local (in percentages of parent size)
-	@property({isValid: isFinite  }) ly;
-	@property({isValid: isFinite  }) lwidth;
-	@property({isValid: isFinite  }) lheight;
-
-	// TODO: rotation
-
+	@property({isValid: isFinite              }) lx; ////////// local (in percentages of parent size)
+	@property({isValid: isFinite              }) ly;
+	@property({isValid: isFinite              }) lwidth;
+	@property({isValid: isFinite              }) lheight;
+	@property({isValid: isRotation, initial: 0}) lrotation;
 
 
 	constructor(options) {
@@ -59,6 +53,8 @@ export default class LyphTemplateBox extends SvgEntity {
 	setParent(newParent) {
 		super.setParent(newParent);
 		for (let plug of this._pluggedIntoParent || []) { plug.unplug() }
+
+		// TODO: put (most of) the following in a (new) superclass to share it with sibling classes
 		const _px  = this.parent.p('x');
 		const _py  = this.parent.p('y');
 		const _pxd = _px.diff((prev, next) => next - prev, this.parent.x);
@@ -73,11 +69,9 @@ export default class LyphTemplateBox extends SvgEntity {
 		const _ly  = this.p('ly');
 		const _lw  = this.p('lwidth');
 		const _lh  = this.p('lheight');
-		// const _r   = this.p('rotation');
-		// const _lr  = this.p('lrotation');
-		// const _pr  = this.parent.p('rotation');
-		// const _prd = _pr.diff((prev, next) => (next - prev + 360) % 360, this.parent.rotation);
-		// const _lrd = _lr.diff((prev, next) => (next - prev + 360) % 360, this.parent.rotation);
+		const _r   = this.p('rotation');
+		const _lr  = this.p('lrotation');
+		const _pr  = this.parent.p('rotation');
 		this._pluggedIntoParent = [
 			_lx.plug(Kefir.combine([_x], [_pw, _px],   (x, pw, px) => (x - px) / pw)),
 			_ly.plug(Kefir.combine([_y], [_ph, _py],   (y, ph, py) => (y - py) / ph)),
@@ -94,26 +88,26 @@ export default class LyphTemplateBox extends SvgEntity {
 			_w .plug(Kefir.combine([_pw], [_lw],  (pw, lw) => pw * lw)),
 			_h .plug(Kefir.combine([_ph], [_lh],  (ph, lh) => ph * lh)),
 
-			// _r .plug(Kefir.combine([_prd], [_r],  (prd, r) => (r + prd + 360) % 360)),
-			// _r .plug(Kefir.combine([_lrd], [_r],  (lrd, r) => (r + lrd + 360) % 360)),
+		    _r .plug(Kefir.combine([_pr, _lr], (pr, lr) => (pr + lr + 360) % 360)),
 		];
 	};
 
 	createElement() {
 		/* main HTML */
+		let clipPathId = uniqueId('clip-path');
 		let result = $.svg(`
 			<g>
 				<rect class="lyphTemplate"></rect>
-				<rect class="axis" height="${this.axisThickness}"></rect>
-				<defs>
-					<clipPath id="name-space">
-						<rect class="name-space" height="${this.axisThickness}"></rect>
-					</clipPath>
-				</defs>
-				<text class="axis label" clip-path="url(#name-space)">${this.model.name}</text>
-				<text class="axis minus"> − </text>
-				<text class="axis plus "> + </text>
-				
+				<svg class="axis">
+					<defs>
+						<clipPath id="${clipPathId}">
+							<rect class="name-space" x="0" y="0" height="100%" width="100%"></rect>
+						</clipPath>
+					</defs>
+					<text class="minus" stroke="white"> − </text>
+					<text class="label" stroke="none" clip-path="url(#${clipPathId})"> ${this.model.name} </text>
+					<text class="plus " stroke="white"> + </text>
+				</svg>
 				<g class="child-container"></g>
 				<g class="delete-clicker"></g>
 				<g class="rotate-clicker"></g>
@@ -126,133 +120,215 @@ export default class LyphTemplateBox extends SvgEntity {
 			shapeRendering: 'crispEdges',
 			pointerEvents:  'all'
 		});
-		const axis = result.find('rect.axis').css({
+		const axis = result.find('svg.axis').css({
 			stroke:         'black',
 			fill:           'black',
 			shapeRendering: 'crispEdges',
-			pointerEvents:  'none'
+			pointerEvents:  'none',
+			overflow:       'visible'
 		});
-		const axisText = result.find('text.axis').css({
-			stroke:           'white',
+		const axisText = axis.find('text').css({
 			fill:             'white',
 			fontSize:         '14px',
 			textRendering:    'geometricPrecision',
 			pointerEvents:    'none',
-			dominantBaseline: 'text-before-edge'
+			dominantBaseline: 'central'
 		});
-		const axisMinus     = axisText.filter('.minus').css('text-anchor', 'start');
-		const axisPlus      = axisText.filter('.plus') .css('text-anchor', 'end');
-		const axisLabel     = axisText.filter('.label').css('text-anchor', 'middle').css({ stroke: 'none' });
-		const nameSpacePath = result.find('defs > clipPath > rect.name-space');
+
 
 		/* alter DOM based on observed changes */
+
 		lyphTemplate.mouseenter(() => { this.hovering = true  });
 		lyphTemplate.mouseleave(() => { this.hovering = false });
 		for (let prop of ['x', 'y', 'width', 'height']) {
-			this.p(prop).onValue((v) => { lyphTemplate.attr(prop, v) });
+			lyphTemplate.attrPlug(prop, this.p(prop));
 		}
 
-
-		let rot = (rotation, {x, y, width, height}) => {
+		let layerRot = (rotation) => ({x, y, width, height}) => {
+			let w2h = this.height / this.width;
+			let h2w = (this.width - this.axisThickness) / (this.height - this.axisThickness);
 			x -= this.x;
 			y -= this.y;
 			switch (rotation) {
-				case 90:  { [x, y, width, height] = [-y,  x, height, width] } break;
-				case 180: { [x, y, width, height] = [-x, -y, width, height] } break;
-				case 270: { [x, y, width, height] = [ y, -x, height, width] } break;
+				case 90: {
+					[x, y, width, height] = [
+						this.width - h2w * (y + height),
+						x      * w2h,
+						height * h2w,
+						width  * w2h
+					]
+				} break;
+				case 180: {
+					[x, y, width, height] = [
+						x,
+						this.height - y - height,
+						width,
+						height
+					]
+				} break;
+				case 270: {
+					[x, y, width, height] = [
+						h2w * y,
+						x      * w2h,
+						height * h2w,
+						width  * w2h
+					]
+				} break;
 			}
 			x += this.x;
 			y += this.y;
 			return {x, y, width, height};
 		};
 
-		let posObj = this.p(['x', 'y', 'width', 'height', 'rotation']).map(([x, y, width, height, rotation]) => ({
-			x, y, width, height, rotation
+		let posObj = this.p(['x', 'y', 'width', 'height', 'rotation'])
+             .map(([x, y, width, height, rotation]) => ({ x, y, width, height, rotation }));
+
+		let axisPos = posObj.map(({x, y, width, height, rotation}) => sw(rotation)({
+			0: {
+				x:           x+2,
+				y:           y + height - this.axisThickness,
+				width:       width-4,
+				height:      this.axisThickness,
+				minusX:      '0',
+				minusY:      '50%',
+				labelX:      '50%',
+				labelY:      '50%',
+				plusX:       '100%',
+				plusY:       '50%',
+				minusAnchor: 'start',
+				labelAnchor: 'middle',
+				plusAnchor:  'end',
+				writingMode: 'horizontal-tb'
+			},
+			90: {
+				x:           x+1,
+				y:           y+5, // TODO: why is +5 (and other small corrections) needed?
+				width:       this.axisThickness,
+				height:      height,
+				minusX:      '50%',
+				minusY:      '0',
+				labelX:      '50%',
+				labelY:      '50%',
+				plusX:       '50%',
+				plusY:       '100%',
+				minusAnchor: 'start',
+				labelAnchor: 'middle',
+				plusAnchor:  'end',
+				writingMode: 'vertical-rl'
+			},
+			180: {
+				x:           x+2,
+				y:           y,
+				width:       width-4,
+				height:      this.axisThickness,
+				minusX:      '100%',
+				minusY:      '50%',
+				labelX:      '50%',
+				labelY:      '50%',
+				plusX:       '0',
+				plusY:       '50%',
+				minusAnchor: 'end',
+				labelAnchor: 'middle',
+				plusAnchor:  'start',
+				writingMode: 'horizontal-tb'
+			},
+			270: {
+				x:           x + width - this.axisThickness + 1,
+				y:           y+5,
+				width:       this.axisThickness,
+				height:      height,
+				minusX:      '50%',
+				minusY:      '100%',
+				labelX:      '50%',
+				labelY:      '50%',
+				plusX:       '50%',
+				plusY:       '0',
+				minusAnchor: 'end',
+				labelAnchor: 'middle',
+				plusAnchor:  'start',
+				writingMode: 'vertical-rl'
+			}
 		}));
-
-		let nameSpacePathPos = posObj.map(({x, y, width, height, rotation}) => rot(rotation, {
-			x:      x + this.axisThickness,
-			y:      y + height - this.axisThickness,
-			width:  width - 2 * this.axisThickness,
-			height: width - 2 * this.axisThickness
-		}));
-		for (let key of ['x', 'y', 'width', 'height']) { nameSpacePath.attrPlug(key, nameSpacePathPos.map(o => o[key])) }
-
-		let axisPos = posObj.map(({x, y, width, height, rotation}) => rot(rotation, {
-			x:      x,
-			y:      y + height - this.axisThickness,
-			width:  width,
-			height: this.axisThickness
-		}));
-		for (let key of ['x', 'y', 'width', 'height']) { axis.attrPlug(key, axisPos.map(o => o[key])) }
-
-		let axisMinusPos = posObj.map(({x, y, width, height, rotation}) => rot(rotation, {
-			x: x + 1,
-			y: y + height - this.axisThickness - 0.5
-		}));
-		for (let key of ['x', 'y']) { axisMinus.attrPlug(key, axisMinusPos.map(o => o[key])) }
-
-		let axisPlusPos = posObj.map(({x, y, width, height, rotation}) => rot(rotation, {
-			x: x + width - 1,
-			y: y + height - this.axisThickness - 0.5
-		}));
-		for (let key of ['x', 'y']) { axisPlus.attrPlug(key, axisPlusPos.map(o => o[key])) }
-
-		let axisLabelPos = posObj.map(({x, y, width, height, rotation}) => rot(rotation, {
-			x: x + width / 2,
-			y: y + height - this.axisThickness - 0.5
-		}));
-		for (let key of ['x', 'y']) { axisLabel.attrPlug(key, axisLabelPos.map(o => o[key])) }
-
-
-		// axisMinus.attrPlug('x', this.p( 'x'           ).map(( x         ) => x + 1)                                 );
-		// axisPlus .attrPlug('x', this.p(['x', 'width' ]).map(([x, width ]) => x + width - 1)                         );
-		// axisLabel.attrPlug('x', this.p(['x', 'width' ]).map(([x, width ]) => x + width / 2)                         );
-		// axisText .attrPlug('y', this.p(['y', 'height']).map(([y, height]) => y + height - this.axisThickness - 0.5) );
-
+		axis
+			.attrPlug('x',      axisPos.map(o => o.x     ))
+			.attrPlug('y',      axisPos.map(o => o.y     ))
+			.attrPlug('width',  axisPos.map(o => o.width ))
+			.attrPlug('height', axisPos.map(o => o.height));
+		axisText
+			.attrPlug('writing-mode', axisPos.map(o => o.writingMode));
+		axisText.filter('.minus')
+	        .attrPlug('x',           axisPos.map(o => o.minusX     ))
+            .attrPlug('y',           axisPos.map(o => o.minusY     ))
+            .attrPlug('text-anchor', axisPos.map(o => o.minusAnchor));
+		axisText.filter('.label')
+	        .attrPlug('x',           axisPos.map(o => o.labelX     ))
+	        .attrPlug('y',           axisPos.map(o => o.labelY     ))
+            .attrPlug('text-anchor', axisPos.map(o => o.labelAnchor));
+		axisText.filter('.plus')
+	        .attrPlug('x',           axisPos.map(o => o.plusX      ))
+	        .attrPlug('y',           axisPos.map(o => o.plusY      ))
+            .attrPlug('text-anchor', axisPos.map(o => o.plusAnchor ));
 
 		/* add layer elements and change their positioning based on observed changes */
 		for (let lTBox of this.layerTemplateBoxes) {
 			const layerHeight = (height) => (height - this.axisThickness) / (this.model ? this.model.layers.length : 5);
 			result.children('.child-container').append(lTBox.element);
-			lTBox.p('x')     .plug( this.p( 'x'           )                                                                                                         );
-			lTBox.p('width') .plug( this.p( 'width'       )                                                                                                         );
-			lTBox.p('y')     .plug( this.p(['y', 'height']).map(([y, height]) => y + (this.layerTemplateBoxes.length - lTBox.model.position) * layerHeight(height)) );
-			lTBox.p('height').plug( this.p( 'height'      ).map(layerHeight)                                                                                        );
+			let layerPos = posObj.map(({x, y, width, height, rotation}) => layerRot(rotation)({
+				x: x,
+				y: y + (this.layerTemplateBoxes.length - lTBox.model.position) * layerHeight(height),
+				width:  width,
+				height: layerHeight(height)
+			}));
+			lTBox.p('y')     .plug(layerPos.map(o => o.y     ));
+			lTBox.p('x')     .plug(layerPos.map(o => o.x     ));
+			lTBox.p('width') .plug(layerPos.map(o => o.width ));
+			lTBox.p('height').plug(layerPos.map(o => o.height));
 		}
 
-		/* delete clicker */
+		/* draggable layer dividers */
+		// TODO: put these borders everywhere (not just in between layers),
+		//     : and they can act as snap-targets too.
+		for (let ltBox of _(this.layerTemplateBoxes).initial()) {
+			let border = new LayerBorderLine({
+				parent: this,
+				layer: ltBox,
+				side: 'outer',
+				model: { type: 'Border', id: -1 } // TODO: real border model
+			});
+			this.root.appendChildElement(border);
+
+		}
+
+
+		/* delete clicker (not rotated) */
 		let deleteClicker = this.deleteClicker();
 		deleteClicker.element.appendTo(result.children('.delete-clicker'));
-
 		(deleteClicker.element)
 			.attrPlug('x', this.p(['width',  'x']).map(([width, x]) => width + x) )
 			.attrPlug('y', this.p( 'y'           )                                );
-
 		(deleteClicker.element)
 			.cssPlug('display', Kefir.combine([
 				this.p('hovering'),
 				deleteClicker.p('hovering'),
-				this.root.p('draggingSomething')
-			]).map(([h1, h2, d]) => (h1 || h2) && !d ? 'block' : 'none'));
+				this.root.p('draggingSomething'),
+				this.root.p('resizingSomething')
+			], (h1, h2, d, r) => (h1 || h2) && !d && !r ? 'block' : 'none'));
 
-		/* rotate clicker */
+		/* rotate clicker (not rotated) */
 		let rotateClicker = new RotateClicker();
 		rotateClicker.element.appendTo(result.children('.rotate-clicker'));
-
 		(rotateClicker.element)
 			.attrPlug('x', this.p('x'))
 			.attrPlug('y', this.p('y'));
-
 		(rotateClicker.element)
 			.cssPlug('display', Kefir.combine([
 				this.p('hovering'),
 				rotateClicker.p('hovering'),
-				this.root.p('draggingSomething')
-			]).map(([h1, h2, d]) => (h1 || h2) && !d ? 'block' : 'none'));
-
+				this.root.p('draggingSomething'),
+				this.root.p('resizingSomething')
+			], (h1, h2, d, r) => (h1 || h2) && !d && !r ? 'block' : 'none'));
 		rotateClicker.clicks.onValue(() => {
-			this.rotation = (this.rotation + 90) % 360;
+			this.lrotation = (this.lrotation + 90) % 360;
 		});
 
 		/* return result */
@@ -264,8 +340,8 @@ export default class LyphTemplateBox extends SvgEntity {
 			Object.assign(lTBox, {
 				width:  this.width,
 				height: this.layerHeight,
-				x: this.x,
-				y: this.y + (this.layerTemplateBoxes.length - lTBox.model.position) * this.layerHeight // from the axis upward
+				x:      this.x,
+				y:      this.y + (this.layerTemplateBoxes.length - lTBox.model.position) * this.layerHeight // from the axis upward
 			});
 		}
 	}
@@ -298,14 +374,6 @@ export default class LyphTemplateBox extends SvgEntity {
 
 				/* set the actual visible coordinates */
 				Object.assign(this, visible);
-
-				// /* set visible (x, y) based on snapping and restriction */
-				// let prev = pick(this, 'x', 'y');
-				// this.traverse([], (entity) => {
-				// 	// console.log(entity.);
-				// 	entity.x += visible.x - prev.x;
-				// 	entity.y += visible.y - prev.y;
-				// });
 			}
 		};
 	}
@@ -337,7 +405,7 @@ export default class LyphTemplateBox extends SvgEntity {
 				}
 
 				/* initialize visible coordinates */
-				let visible = { ...raw };
+				let visible = clone(raw);
 
 				// TODO: snapping
 

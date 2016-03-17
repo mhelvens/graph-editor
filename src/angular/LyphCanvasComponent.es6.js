@@ -10,6 +10,10 @@ import SVGEntity         from '../canvas/SvgEntity.es6.js';
 import LyphTemplateBox   from '../canvas/LyphTemplateBox.es6.js';
 import NodeCircle        from '../canvas/NodeCircle.es6.js';
 import ProcessLine       from '../canvas/ProcessLine.es6.js';
+import LayerBorderLine   from '../canvas/LayerBorderLine.es6.js';
+
+
+function isRotation(v) { return _([0, 90, 180, 270]).includes(v) }
 
 
 @Component({
@@ -21,6 +25,8 @@ import ProcessLine       from '../canvas/ProcessLine.es6.js';
 		<svg id="svg-canvas">
 
 			<g class="svg-lyph-template-boxes"></g>
+			
+			<g class="svg-layer-borders"></g>
 
 			<g class="svg-process-edges"></g>
 
@@ -46,11 +52,14 @@ import ProcessLine       from '../canvas/ProcessLine.es6.js';
 export default class LyphCanvasComponent extends SVGEntity {
 
 	@property({initial: false               }) draggingSomething;
+	@property({initial: false               }) resizingSomething;
 	@property({initial: 0, isValid: isFinite}) x; // TODO: figure out why settable: false causes a bug
 	@property({initial: 0, isValid: isFinite}) y;
 	@property({isValid: isFinite            }) width;
 	@property({isValid: isFinite            }) height;
 	// TODO: lx, ly, lwidth, lheight (just for consistency in the interface? Or maybe root doesn't need them.)
+
+	@property({isValid: isRotation, initial: 0}) rotation;
 
 	added = new EventEmitter;
 
@@ -189,6 +198,9 @@ export default class LyphCanvasComponent extends SVGEntity {
 		if (newChild instanceof ProcessLine) {
 			this.element.children('.svg-process-edges').append(newChild.element);
 		}
+		if (newChild instanceof LayerBorderLine) {
+			this.element.children('.svg-layer-borders').append(newChild.element);
+		}
 	}
 
 	pageToCanvas({x, y, left, right, top, bottom, width, height}) {
@@ -201,9 +213,5 @@ export default class LyphCanvasComponent extends SVGEntity {
 		if (isFinite(bottom)) { bottom -= r.top  }
 		return {x, y, left, right, top, bottom, width, height};
 	}
-
-	// boundingBox() { // TODO: remove after inheriting SVGEntity
-	// 	return this.pageToCanvas(this.element[0].getBoundingClientRect());
-	// }
 
 }

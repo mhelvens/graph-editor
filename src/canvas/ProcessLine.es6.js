@@ -14,8 +14,8 @@ export default class ProcessLine extends SvgEntity {
 	constructor(options) {
 		super(options);
 		Object.assign(this, pick(options, 'source', 'target'));
-		this.source.e('destroy').take(1).onValue(() => { this.delete() });
-		this.target.e('destroy').take(1).onValue(() => { this.delete() });
+		this.source.e('delete').take(1).onValue(() => { this.delete() });
+		this.target.e('delete').take(1).onValue(() => { this.delete() });
 	}
 
 	createElement() {

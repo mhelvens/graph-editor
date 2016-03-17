@@ -1,5 +1,5 @@
 import {pick, isFinite} from 'lodash';
-import $                from 'jquery';
+import $                from '../libs/jquery.es6.js';
 import interact         from '../libs/interact.js';
 import Kefir            from '../libs/kefir.es6.js';
 
