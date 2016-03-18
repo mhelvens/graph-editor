@@ -1,36 +1,33 @@
-import $            from 'jquery';
-import Kefir        from 'kefir';
-import {isFunction} from 'lodash'
+import $             from 'jquery';
+import Kefir         from 'kefir';
+import isFunction    from 'lodash/isFunction';
+import isPlainObject from 'lodash/isPlainObject';
+import invokeMap     from 'lodash/invokeMap'
 
 
 /* Kefir jQuery plugin ********************************************************************************************/
 
+const plugInto = Symbol('plugInto');
 Object.assign($.fn, {
 
 	asKefirStream(eventName) {
 		return Kefir.fromEvents(this, eventName);
 	},
 
-	attrPlug(key, property) {
-		property.onValue((value) => {
-			this.attr(key, value);
-		});
-		return this;
+	[plugInto](method, key, observable) {
+		if (isPlainObject(key)) {
+			let unplugFns = Object.entries(key).map(args => this[plugInto](method, ...args));
+			return { unplug() { invokeMap(unplugFns, 'unplug') } };
+		} else {
+			const callback = (value) => { this[method](key, value) };
+			observable.onValue(callback);
+			return { unplug() { observable.offValue(callback) } };
+		}
 	},
 
-	propPlug(key, property) {
-		property.onValue((value) => {
-			this.prop(key, value);
-		});
-		return this;
-	},
-
-	cssPlug(key, property) {
-		property.onValue((value) => {
-			this.css(key, value);
-		});
-		return this;
-	}
+	attrPlug(key, observable) { return this[plugInto]('attr', key, observable) },
+	propPlug(key, observable) { return this[plugInto]('prop', key, observable) },
+	cssPlug (key, observable) { return this[plugInto]('css',  key, observable) }
 
 });
 

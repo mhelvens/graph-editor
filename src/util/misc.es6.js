@@ -1,4 +1,7 @@
-import {zip, initial, tail} from 'lodash';
+import tail    from 'lodash/fp/tail';
+import initial from 'lodash/fp/initial';
+import zip     from 'lodash/fp/zip';
+// import {zip, initial, tail} from 'lodash/fp';
 
 function extractExpression(fn) {
 	let match = fn.toString().match(/function\s*\(.*?\)\s*\{\s*return\s*(.*?)\s*?;\s*\}/);
@@ -80,8 +83,6 @@ export const sw = (val, {autoInvoke = true} = {}) => (map) => {
 };
 
 export const swf = (map, options) => (val) => sw(val, options)(map);
-
-export const boundBy = (min, max) => (val) => Math.max(min, Math.min(max, val));
 
 export const min = Math.min;
 export const max = Math.max;

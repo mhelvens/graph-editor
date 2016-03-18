@@ -1,5 +1,5 @@
-import {abstract}                from 'core-decorators';
-import {memoize, pick, identity} from 'lodash';
+import {abstract} from 'core-decorators';
+import pick       from 'lodash/pick';
 
 import {assert} from '../util/misc.es6.js';
 

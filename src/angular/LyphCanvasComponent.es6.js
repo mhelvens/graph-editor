@@ -1,19 +1,16 @@
 import {Component, ChangeDetectorRef, ElementRef, EventEmitter} from '../../node_modules/angular2/core';
 import $                                                        from '../libs/jquery.es6.js';
-import {isFinite}                                               from 'lodash';
+import join                                                     from 'lodash/fp/join';
 import interact                                                 from '../libs/interact.js';
 
 import {sw} from '../util/misc.es6.js';
 
-import {property}        from '../canvas/ValueTracker.es6.js';
-import SVGEntity         from '../canvas/SvgEntity.es6.js';
-import LyphTemplateBox   from '../canvas/LyphTemplateBox.es6.js';
-import NodeCircle        from '../canvas/NodeCircle.es6.js';
-import ProcessLine       from '../canvas/ProcessLine.es6.js';
-import LayerBorderLine   from '../canvas/LayerBorderLine.es6.js';
-
-
-function isRotation(v) { return _([0, 90, 180, 270]).includes(v) }
+import {property}           from '../canvas/ValueTracker.es6.js';
+import SvgDimensionedEntity from '../canvas/SvgDimensionedEntity.es6.js';
+import LyphTemplateBox      from '../canvas/LyphTemplateBox.es6.js';
+import NodeCircle           from '../canvas/NodeCircle.es6.js';
+import ProcessLine          from '../canvas/ProcessLine.es6.js';
+import LayerBorderLine      from '../canvas/LayerBorderLine.es6.js';
 
 
 @Component({
@@ -41,27 +38,22 @@ function isRotation(v) { return _([0, 90, 180, 270]).includes(v) }
 			position:   absolute;
 			top:        0;
 			left:       0;
-			min-width:  100%;
-			min-height: 100%;
 			padding:    0;
 			margin:     0;
+			min-width:  100%;
+			min-height: 100%;
+			max-width:  100%;
+			max-height: 100%;
 		}
 
 	`]
 })
-export default class LyphCanvasComponent extends SVGEntity {
-
-	@property({initial: false               }) draggingSomething;
-	@property({initial: false               }) resizingSomething;
-	@property({initial: 0, isValid: isFinite}) x; // TODO: figure out why settable: false causes a bug
-	@property({initial: 0, isValid: isFinite}) y;
-	@property({isValid: isFinite            }) width;
-	@property({isValid: isFinite            }) height;
-	// TODO: lx, ly, lwidth, lheight (just for consistency in the interface? Or maybe root doesn't need them.)
-
-	@property({isValid: isRotation, initial: 0}) rotation;
+export default class LyphCanvasComponent extends SvgDimensionedEntity {
 
 	added = new EventEmitter;
+
+	@property({initial: false}) draggingSomething;
+	@property({initial: false}) resizingSomething;
 
 	constructor({nativeElement}: ElementRef, changeDetectorRef: ChangeDetectorRef) {
 		super({
@@ -72,11 +64,12 @@ export default class LyphCanvasComponent extends SVGEntity {
 			nativeElement,
 			changeDetectorRef
 		});
-		$(nativeElement).data('controller', this);
 	}
 
 	createElement() {
-		return $(this.nativeElement).find('#svg-canvas').css({ overflow: 'visible' });
+		let result = $(this.nativeElement).find('#svg-canvas').css({ overflow: 'visible' });
+		result.attrPlug('viewBox', this.p(['x', 'y', 'width', 'height']).map(join(' ')));
+		return result;
 	}
 
 	ngAfterViewInit() {
@@ -86,13 +79,12 @@ export default class LyphCanvasComponent extends SVGEntity {
 
 			if (!this.activeTool) { return }
 
-			let mouseCoords = this.pageToCanvas({ x: event.pageX, y: event.pageY});
+			let mouseCoords = this.pageToCanvas({ x: event.pageX, y: event.pageY });
 
 			this.activeTool.result = await sw(this.activeTool.form)({
 				'box':     ()=> this.deployTool_LyphTemplateBox(event, mouseCoords),
 				'node':    ()=> this.deployTool_NodeCircle     (event, mouseCoords),
 				'process': ()=> this.deployTool_ProcessLine    (event, mouseCoords)
-				// 'canonical-tree-line': ()=> this.deployTool_CanonicalTree  (event, mouseCoords)
 			});
 
 			this.added.next(this.activeTool);
@@ -134,7 +126,7 @@ export default class LyphCanvasComponent extends SVGEntity {
 			model : { id: -1, name: 'test node' }, // TODO: real node models
 			x, y
 		});
-		$(this.nativeElement).find('.svg-nodes').append(node.element);
+		this.element.find('.svg-nodes').append(node.element);
 		return node.startDraggingBy(event);
 	};
 	
@@ -153,30 +145,10 @@ export default class LyphCanvasComponent extends SVGEntity {
 				x, y
 			})
 		});
-		$(this.nativeElement).find('.svg-nodes').append(process.source.element).append(process.target.element);
-		$(this.nativeElement).find('.svg-process-edges').append(process.element);
+		this.element.find('.svg-nodes').append(process.source.element).append(process.target.element);
+		this.element.find('.svg-process-edges').append(process.element);
 		return process.target.startDraggingBy(event);
 	};
-	
-	// deployTool_CanonicalTree(event, {x, y}) {
-	// 	let process = new CanonicalTreeLine({
-	// 		parent: this,
-	// 		model : { id: -1, name: 'test canonicalTree' }, // TODO: real process models
-	// 		source: new NodeCircle({
-	// 			parent: this,
-	// 			model : { id: -1, name: 'test source node' }, // TODO: real node models
-	// 			x, y
-	// 		}),
-	// 		target: new NodeCircle({
-	// 			parent: this,
-	// 			model : { id: -1, name: 'test target node' }, // TODO: real node models
-	// 			x, y
-	// 		})
-	// 	});
-	// 	$(this.nativeElement).find('.svg-nodes').append(process.source.element).append(process.target.element);
-	// 	$(this.nativeElement).find('.svg-process-edges').append(process.element);
-	// 	return process.target.startDraggingBy(event);
-	// };
 
 	deployTool_LyphTemplateBox(event, {x, y}) {
 		let lyphTemplateBox = new LyphTemplateBox({
@@ -184,7 +156,7 @@ export default class LyphCanvasComponent extends SVGEntity {
 			model : this.activeTool.model,
 			x, y
 		});
-		$(this.nativeElement).find('.svg-lyph-template-boxes').append(lyphTemplateBox.element);
+		this.element.find('.svg-lyph-template-boxes').append(lyphTemplateBox.element);
 		return lyphTemplateBox.startResizingBy(event);
 	};
 
@@ -204,13 +176,16 @@ export default class LyphCanvasComponent extends SVGEntity {
 	}
 
 	pageToCanvas({x, y, left, right, top, bottom, width, height}) {
-		let r = this.element[0].getBoundingClientRect();
-		if (isFinite(x))      { x      -= r.left }
-		if (isFinite(left))   { left   -= r.left }
-		if (isFinite(right))  { right  -= r.left }
-		if (isFinite(y))      { y      -= r.top  }
-		if (isFinite(top))    { top    -= r.top  }
-		if (isFinite(bottom)) { bottom -= r.top  }
+
+		// TODO: remove function and function uses
+
+		// let r = this.element.getBoundingClientRect();
+		// if (isFinite(x))      { x      -= r.left }
+		// if (isFinite(left))   { left   -= r.left }
+		// if (isFinite(right))  { right  -= r.left }
+		// if (isFinite(y))      { y      -= r.top  }
+		// if (isFinite(top))    { top    -= r.top  }
+		// if (isFinite(bottom)) { bottom -= r.top  }
 		return {x, y, left, right, top, bottom, width, height};
 	}
 

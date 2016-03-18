@@ -1,6 +1,6 @@
-import {abstract}                 from 'core-decorators';
-import {pick, identity, isFinite} from 'lodash';
-import interact                   from '../libs/interact.js';
+import {abstract} from 'core-decorators';
+import identity   from 'lodash/identity';
+import interact   from '../libs/interact.js';
 
 import ValueTracker, {property} from './ValueTracker.es6.js';
 
@@ -31,7 +31,7 @@ import ValueTracker, {property} from './ValueTracker.es6.js';
 	}
 
 	boundingBox() {
-		return this.pageToCanvas(this.element[0].getBoundingClientRect());
+		return this.pageToCanvas(this.element.getBoundingClientRect());
 	}
 
 	moveToFront() {

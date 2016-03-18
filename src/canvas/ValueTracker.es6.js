@@ -1,6 +1,11 @@
-import _, {isUndefined, isFunction, isPlainObject, isArray, set} from 'lodash';
-import Kefir                                                     from '../libs/kefir.es6.js';
-import {assert}                                                  from '../util/misc.es6.js';
+import includes      from 'lodash/includes';
+import isUndefined   from 'lodash/isUndefined';
+import isPlainObject from 'lodash/isPlainObject';
+import isArray       from 'lodash/isArray';
+import set           from 'lodash/set';
+import ldIsEqual     from 'lodash/isEqual';
+import Kefir         from '../libs/kefir.es6.js';
+import {assert}      from '../util/misc.es6.js';
 
 
 /* symbols to private members */
@@ -22,7 +27,16 @@ export default class ValueTracker {
 		if (this[events]) { return }
 		this[events]     = {};
 		this[properties] = {};
-		this.newEvent('delete');
+
+		/* create the delete method and event (special type of event, easier to create this way) */
+		this[events].delete = Kefir.stream((emitter) => {
+			this.delete = () => {
+				emitter.emit();
+				emitter.end();
+			};
+		});
+
+		/* add the events and properties added with ES7 annotations */
 		for (let [key, options] of Object.entries(this.constructor[events]     || {})) { this.newEvent   (key, options) }
 		for (let [key, options] of Object.entries(this.constructor[properties] || {})) { this.newProperty(key, options) }
 	}
@@ -32,11 +46,10 @@ export default class ValueTracker {
 	 *
 	 * @public
 	 * @method
-	 * @param  {String}        name    - the name of the event, used to trigger or subscribe to it
-	 * @param  {Kefir.Stream} [source] - another event stream to automatically trigger this event
+	 * @param  {String} name - the name of the event, used to trigger or subscribe to it
 	 * @return {Kefir.Bus} - the created event stream
 	 */
-	newEvent(name, {source} = {}) {
+	newEvent(name, {} = {}) {
 		this[initialize]();
 
 		/* is the event name already taken? */
@@ -47,9 +60,108 @@ export default class ValueTracker {
 
 		/* define the event stream */
 		let bus = new Kefir.Bus();
-		if (source) { bus.plug(source) }
+		this.e('delete').onValue(bus.end);
+		this[events][name] = bus.takeUntilBy(this.e('delete'));
+		Object.assign(this[events][name], {
+			plug:   (observable) => {
+				bus.plug(observable);
+				return {
+					unplug: () => {
+						bus.unplug(observable);
+					}
+				};
+			},
+			unplug: bus.unplug,
+			emit:   bus.emit
+		});
+		return this[events][name];
+	}
 
-		return this[events][name] = bus;
+	/**
+	 * This method defines a new property on this object.
+	 *
+	 * @public
+	 * @method
+	 * @param  {String}                   name           - the name of the event stream to retrieve
+	 * @param  {Boolean}                 [settable=true] - whether the value can be manually set
+	 * @param  {function(*,*):Boolean}   [isEqual]       - a predicate function by which to test for duplicate values
+	 * @param  {function(*):Boolean}     [isValid]       - a predicate function to validate a given value
+	 * @param  {*}                       [initial]       - the initial value of this property
+	 *
+	 * @return {Kefir.Property} - the property associated with the given name
+	 */
+	newProperty(name, {
+		settable = true,
+		isEqual  = ldIsEqual,
+		isValid  = ()=>true,
+		initial,
+	} = {}) {
+		this[initialize]();
+
+		/* is the property name already taken? */
+		assert(() => !this[events][name],
+			`There is already an event '${name}' on this object.`);
+		assert(() => !this[properties][name],
+			`There is already a property '${name}' on this object.`);
+
+		/* if isValid is an array, check for inclusion */
+		if (isArray(isValid)) {
+			let options = isValid;
+			isValid = (v) => includes(options, v)
+		}
+
+		/* define the bus which manages the property */
+		let bus = new Kefir.Bus();
+		this.e('delete').take(1).onValue(bus.end);
+
+		/* define the property itself, and give it additional methods */
+		let hasInitial = (!isUndefined(initial) && isValid(initial));
+		let property = this[events][name] = this[properties][name] =
+			bus.takeUntilBy(this.e('delete'))
+			   .toProperty(hasInitial ? (()=>initial) : undefined)
+			   .skipDuplicates(isEqual);
+
+		/* maintain current value */
+		let currentValue;
+		property.onValue((value) => { currentValue = value });
+
+		/* additional property methods */
+		let plugged = new Map;
+		Object.assign(property, {
+
+			plug(observable, passive, transform) {
+				if (Array.isArray(observable)) {
+					return this.plug(Kefir.combine(observable, passive, transform));
+				} else {
+					let filteredObservable = isValid ? observable.filter(isValid) : observable;
+					plugged.set(observable, filteredObservable);
+					bus.plug(filteredObservable);
+					return {
+						unplug: () => {
+							bus.unplug(filteredObservable);
+						}
+					};
+				}
+			},
+
+			get() { return currentValue }
+
+		}, settable && {
+
+			set(value) {
+				if (!isValid || isValid(value)) {
+					bus.emit(value);
+				}
+				return property;
+			}
+
+		});
+
+		/* make the property active; it doesn't work if this isn't done (the nature of Kefir.js) */
+		property.run();
+
+		/* return the property */
+		return property;
 
 	}
 
@@ -90,86 +202,6 @@ export default class ValueTracker {
 		} else {
 			return this[properties][name];
 		}
-	}
-
-	/**
-	 * This method defines a new property on this object.
-	 *
-	 * @public
-	 * @method
-	 * @param  {String}                   name           - the name of the event stream to retrieve
-	 * @param  {Boolean}                 [settable=true] - whether the value can be manually set
-	 * @param  {function(*,*):Boolean}   [isEqual]       - a predicate function by which to test for duplicate values
-	 * @param  {function(*):Boolean}     [isValid]       - a predicate function to validate a given value
-	 * @param  {*}                       [initial]       - the initial value of this property
-	 *
-	 * @return {Kefir.Property} - the property associated with the given name
-	 */
-	newProperty(name, {
-		settable = true,
-		isEqual  = _.isEqual,
-		isValid  = ()=>true,
-		initial,
-	} = {}) {
-		this[initialize]();
-
-		/* is the property name already taken? */
-		assert(() => !this[events][name],
-			`There is already an event '${name}' on this object.`);
-		assert(() => !this[properties][name],
-			`There is already a property '${name}' on this object.`);
-
-		/* define the bus which manages the property */
-		let bus = new Kefir.Bus();
-
-		/* define the property itself, and give it additional methods */
-		let hasInitial = (!isUndefined(initial) && isValid(initial));
-		let property = this[events][name] = this[properties][name] =
-			bus.toProperty(hasInitial ? (()=>initial) : undefined).skipDuplicates(isEqual);
-
-		/* maintain current value */
-		let currentValue;
-		property.onValue((value) => { currentValue = value });
-
-		/* additional property methods */
-		let plugged = new Map;
-		Object.assign(property, {
-
-			plug(observable) {
-				let filteredObservable = isValid ? observable.filter(isValid) : observable;
-				plugged.set(observable, filteredObservable);
-				bus.plug(filteredObservable);
-				return {
-					unplug: () => { property.unplug(observable) }
-				};
-			},
-
-			unplug(observable) {
-				bus.unplug(plugged.get(observable));
-				plugged.delete(observable);
-				return property;
-			},
-
-			get() { return currentValue }
-
-		}, settable && {
-
-			set(value) {
-				if (!isValid || isValid(value)) {
-					bus.emit(value);
-				}
-				return property;
-			}
-
-		});
-
-		/* make the property active; it doesn't work if this isn't done (the nature of Kefir.js) */
-		property.run();
-		this.e('delete').onValue(bus.end);
-
-		/* return the property */
-		return property;
-
 	}
 
 	/**

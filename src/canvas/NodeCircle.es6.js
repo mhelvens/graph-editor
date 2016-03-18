@@ -1,9 +1,12 @@
-import {pick, isFinite} from 'lodash';
-import $                from '../libs/jquery.es6.js';
-import interact         from '../libs/interact.js';
-import Kefir            from '../libs/kefir.es6.js';
+import pick     from 'lodash/pick';
+import isFinite from 'lodash/isFinite';
+import clamp    from 'lodash/fp/clamp';
+import clone    from 'lodash/fp/clone';
+import $        from '../libs/jquery.es6.js';
+import interact from '../libs/interact.js';
+import Kefir    from '../libs/kefir.es6.js';
 
-import {boundBy, abs, sw} from '../util/misc.es6.js';
+import {abs, sw} from '../util/misc.es6.js';
 
 import {property}       from './ValueTracker.es6.js';
 import SvgEntity        from './SvgEntity.es6.js';
@@ -26,10 +29,10 @@ export default class NodeCircle extends SvgEntity {
 	constructor(options) {
 		super(options);
 
-		this.p('lx').plug(Kefir.combine([this.p ('x'), this.parent.p('x')], (x, px)  =>  x - px));
-		this.p('ly').plug(Kefir.combine([this.p ('y'), this.parent.p('y')], (y, py)  =>  y - py));
-		this.p ('x').plug(Kefir.combine([this.p('lx'), this.parent.p('x')], (lx, px) => lx + px));
-		this.p ('y').plug(Kefir.combine([this.p('ly'), this.parent.p('y')], (ly, py) => ly + py));
+		this.p('lx').plug([this.p ('x'), this.parent.p('x')], (x, px)  =>  x - px);
+		this.p('ly').plug([this.p ('y'), this.parent.p('y')], (y, py)  =>  y - py);
+		this.p ('x').plug([this.p('lx'), this.parent.p('x')], (lx, px) => lx + px);
+		this.p ('y').plug([this.p('ly'), this.parent.p('y')], (ly, py) => ly + py);
 
 		Object.assign(this, pick(options, 'x', 'y'));
 	}
@@ -55,6 +58,9 @@ export default class NodeCircle extends SvgEntity {
 		this.p('hovering').plug(shape.asKefirStream('mouseenter').map(()=>true ));
 		this.p('hovering').plug(shape.asKefirStream('mouseleave').map(()=>false));
 		center.attrPlug('cx', this.p('x')).attrPlug('cy', this.p('y'));
+		// shape .attrPlug({
+		// 	cx:
+		// });
 		shape .attrPlug('cx', this.p('x')).attrPlug('cy', this.p('y'));
 		shape .attrPlug('r', this.p('dragging').map((dragging) =>
 			dragging
@@ -164,7 +170,7 @@ export default class NodeCircle extends SvgEntity {
 				raw.y += dy;
 
 				/* initialize visible coordinates */
-				let visible = { ...raw };
+				let visible = clone(raw);
 
 				/* snapping correction */
 				let snap = { x: Infinity, y: Infinity };
@@ -182,8 +188,8 @@ export default class NodeCircle extends SvgEntity {
 				if (abs(snap.y) <  abs(snap.x) && abs(snap.y) <= NodeCircle.SNAP_DISTANCE) { visible.y += snap.y }
 
 				/* restriction correction */
-				visible.x = boundBy( parentRect.left, parentRect.left + parentRect.width  )( visible.x );
-				visible.y = boundBy( parentRect.top,  parentRect.top  + parentRect.height )( visible.y );
+				visible.x = clamp( parentRect.left, parentRect.left + parentRect.width  )( visible.x );
+				visible.y = clamp( parentRect.top,  parentRect.top  + parentRect.height )( visible.y );
 
 				/* set visible (x, y) based on snapping and restriction */
 				this.set(visible);

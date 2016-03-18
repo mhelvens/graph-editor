@@ -1,6 +1,8 @@
-import _, {pick, isFinite} from 'lodash';
-import $                   from '../libs/jquery.es6.js';
-import Kefir               from '../libs/kefir.es6.js';
+import pick     from 'lodash/pick';
+import isFinite from 'lodash/isFinite';
+import get      from 'lodash/fp/get';
+import $        from '../libs/jquery.es6.js';
+import Kefir    from '../libs/kefir.es6.js';
 
 import {sw, swf} from '../util/misc.es6.js';
 
@@ -11,17 +13,14 @@ import SvgEntity  from './SvgEntity.es6.js';
 const absoluteSide = Symbol('absoluteSide');
 
 
-const isOrientation = (v) => _(['horizontal', 'vertical']).includes(v);
-
-
 export default class LayerBorderLine extends SvgEntity {
 
 	layer;
 	side;
 	handle;
 
-	@property({isValid: isOrientation}) orientation;
-	@property({isValid: isFinite     }) position;
+	@property({isValid: ['horizontal', 'vertical']}) orientation;
+	@property({isValid: isFinite                  }) position;
 
 	constructor(options) {
 		super(options);
@@ -44,7 +43,7 @@ export default class LayerBorderLine extends SvgEntity {
 			left:   'vertical',
 			right:  'vertical'
 		})));
-		this.p('position').plug(Kefir.combine([
+		this.p('position').plug([
 			this[absoluteSide],
 			this.layer.p('x'),
 			this.layer.p('y'),
@@ -55,7 +54,7 @@ export default class LayerBorderLine extends SvgEntity {
 			right:  x + width,
 			top:    y,
 			left:   x
-		})));
+		}));
 	}
 
 	createElement() {
@@ -101,11 +100,12 @@ export default class LayerBorderLine extends SvgEntity {
 			top:    { y1: y,          y2: y,          x1: x + width, x2: x         },
 			left:   { y1: y + height, y2: y,          x1: x,         x2: x         }
 		}));
-		lines
-			.attrPlug('x1', positioning.map(o=>o.x1))
-			.attrPlug('y1', positioning.map(o=>o.y1))
-			.attrPlug('x2', positioning.map(o=>o.x2))
-			.attrPlug('y2', positioning.map(o=>o.y2));
+		lines.attrPlug({
+		     x1: positioning.map(get('x1')),
+		     y1: positioning.map(get('y1')),
+		     x2: positioning.map(get('x2')),
+		     y2: positioning.map(get('y2'))
+		});
 
 		/* return result */
 		return result;

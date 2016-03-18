@@ -1,6 +1,6 @@
-import {pick, isFinite} from 'lodash';
-import $                from '../libs/jquery.es6.js';
-import Kefir            from '../libs/kefir.es6.js';
+import pick  from 'lodash/pick';
+import $     from '../libs/jquery.es6.js';
+import Kefir from '../libs/kefir.es6.js';
 
 
 import SvgEntity  from './SvgEntity.es6.js';

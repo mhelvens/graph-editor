@@ -4,7 +4,7 @@ import {Component, provide, enableProdMode} from 'angular2/core';
 import $                                    from './libs/jquery.es6.js';
 import GoldenLayout                         from './libs/golden-layout.es6.js';
 import Kefir                                from './libs/kefir.es6.js';
-import {pick}                               from 'lodash';
+import get                                  from 'lodash/fp/get';
 
 /* local imports */
 import LyphCanvasComponent              from './angular/LyphCanvasComponent.es6.js';
@@ -34,11 +34,11 @@ import './index.scss';
 			content: [{
 				type:          'component',
 				componentName: 'leftPanel',
-				width: 16
+				width: 20
 			}, {
 				type:          'component',
 				componentName: 'mainPanel',
-				width: 84
+				width: 80
 			}]
 		}]
 	});
@@ -85,7 +85,7 @@ import './index.scss';
 					this.activeTool = null;
 				}
 
-				ngOnInit() {
+				ngAfterViewInit() {
 					resolve();
 				}
 
@@ -105,16 +105,29 @@ import './index.scss';
 	$('bootstrap > process-type-button-list')    .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
 	$('bootstrap > lyph-template-button-list')   .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
 	$('bootstrap > canonical-tree-button-list')  .detach().appendTo(leftPanel).wrap(`<div class="inner-panel">`).parent().css('margin', '10px');
-	let lyphCanvas = $('bootstrap > lyph-canvas').detach().appendTo(mainPanel).data('controller');
+	let lyphCanvas = $('bootstrap > lyph-canvas').detach().appendTo(mainPanel).children().data('controller');
 
 	/* propagating resize events */
-	Kefir.merge([
+	let canvasSize = Kefir.merge([
 		Kefir.once(),
+		Kefir.later(1000),
 		$(window).asKefirStream('resize'),
-	    Kefir.fromEvents(mainPanel.data('container'), 'resize'),
-	]).onValue(() => {
-		Object.assign(lyphCanvas, pick(lyphCanvas.element.getBoundingClientRect(), 'width', 'height'));
+	    Kefir.fromEvents(mainPanel.data('container'), 'resize')
+	]).map(() => lyphCanvas.element.getBoundingClientRect());
+	lyphCanvas.p('x')     .plug(canvasSize.map(get('left')));
+	lyphCanvas.p('y')     .plug(canvasSize.map(get('top')));
+	lyphCanvas.p('width' ).plug(canvasSize.map(get('width' )));
+	lyphCanvas.p('height').plug(canvasSize.map(get('height')));
+
+
+
+	$(window).resize((event) => {
+		console.log(
+			lyphCanvas.element.getBoundingClientRect().width,
+			lyphCanvas.element.getBoundingClientRect().height
+		);
 	});
+
 
 	/* Done */
 	console.info("Done.");

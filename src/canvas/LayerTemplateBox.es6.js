@@ -1,41 +1,26 @@
-import _, {pick, isFinite, identity, includes} from 'lodash';
-import $                                       from '../libs/jquery.es6.js';
-import {getHsvGolden}                          from 'golden-colors';
-import chroma                                  from 'chroma-js';
+import $       from '../libs/jquery.es6.js';
+import chroma  from '../libs/chroma.es6.js';
+import get     from 'lodash/fp/get';
 
-import {uniqueId, sw} from '../util/misc.es6.js';
-import {property}     from './ValueTracker.es6.js';
-import SvgEntity      from './SvgEntity.es6.js';
+import {uniqueId, sw}      from '../util/misc.es6.js';
+import SvgPositionedEntity from './SvgPositionedEntity.es6.js';
 
 
-const _color = Symbol('color');
+const pluggedIntoParent = Symbol('pluggedIntoParent');
+const backgroundColor   = Symbol('backgroundColor');
 
 
-function isRotation(v) { return _([0, 90, 180, 270]).includes(v) }
+const TEXT_PADDING = 6;
 
 
-export default class LayerTemplateBox extends SvgEntity {
-
-	@property({isValid: isFinite})               x;
-	@property({isValid: isFinite})               y;
-	@property({isValid: isFinite})               width;
-	@property({isValid: isFinite})               height;
-	@property({isValid: isRotation, initial: 0}) rotation;
-	// TODO: l-versions of these four properties? For now, the LyphTemplateBox has full control.
+export default class LayerTemplateBox extends SvgPositionedEntity {
 
 	constructor(options) {
 		super(options);
-		Object.assign(this, pick(options, 'x', 'y', 'width', 'height'));
-
-		this.p('rotation').plug(this.parent.p('rotation'));
+		this.p('rotation').plug(this.parent.p('rotation')); // TODO: this should be automatic by SvgDimensionedEntity
 	}
 
 	createElement() {
-		/* create a random color (one per layer, stored in the model) */
-		if (!this.model[_color]) {
-			this.model[_color] = getHsvGolden(0.8, 0.8);
-		}
-
 		/* main HTML */
 		let clipPathId = uniqueId('clip-path');
 		let result = $.svg(`
@@ -53,57 +38,45 @@ export default class LayerTemplateBox extends SvgEntity {
 			</g>
 		`);
 
+		/* create a random color (one per layer, stored in the model) */
+		if (!this.model[backgroundColor]) {
+			this.model[backgroundColor] = chroma.randomHsvGolden(0.8, 0.8);
+		}
+
 		/* extract and style important elements */
 		const layerTemplateBounds = result.children('svg');
 		const layerTemplate = layerTemplateBounds.children('rect.layerTemplate').css({
 			stroke:         'black',
-			fill:           this.model[_color].toHexString(),
+			fill:           this.model[backgroundColor],
 			shapeRendering: 'crispEdges',
 			pointerEvents:  'none'
 		});
 		const layerText = layerTemplateBounds.children('text').css({
 			stroke:           'none',
-			fill:             chroma(this.model[_color].toHexString()).darken(2).hex(),
+			fill:             this.model[backgroundColor].darken(2.5),
 			fontSize:         '14px',
 			pointerEvents:    'none',
-			dominantBaseline: 'central'
+			dominantBaseline: 'text-before-edge'
 		});
 
 		/* alter DOM based on observed changes */
-		layerTemplateBounds
-			.attrPlug('x',      this.p('x'))
-			.attrPlug('y',      this.p('y'))
-			.attrPlug('width',  this.p('width'))
-			.attrPlug('height', this.p('height'));
-		
-		let posObj = this.p(['x', 'y', 'width', 'height', 'rotation']) // TODO: un-duplicate this code
-		                 .map(([x, y, width, height, rotation]) => ({ x, y, width, height, rotation }));
-		let textPos = posObj.map(({width, rotation}) => sw(rotation)({
-			0: {
-				x:           7,
-				y:           13,
-				writingMode: 'horizontal-tb'
-			},
-			90: {
-				x:           width - 13,
-				y:           7,
-				writingMode: 'vertical-rl'
-			},
-			180: {
-				x:           7,
-				y:           13,
-				writingMode: 'horizontal-tb'
-			},
-			270: {
-				x:           width - 13,
-				y:           7,
-				writingMode: 'vertical-rl'
-			}
+		layerTemplateBounds.attrPlug({
+			x:      this.p('x'),
+			y:      this.p('y'),
+			width:  this.p('width'),
+			height: this.p('height')
+		});
+		let textPos = this.p(['width', 'rotation']).map(([width, rotation]) => sw(rotation)({
+			0:   { x: TEXT_PADDING,         y: TEXT_PADDING, writingMode: 'horizontal-tb' },
+			90:  { x: width - TEXT_PADDING, y: TEXT_PADDING, writingMode: 'vertical-rl'   },
+			180: { x: TEXT_PADDING,         y: TEXT_PADDING, writingMode: 'horizontal-tb' },
+			270: { x: width - TEXT_PADDING, y: TEXT_PADDING, writingMode: 'vertical-rl'   }
 		}));
-		layerText
-			.attrPlug('x',            textPos.map(o=>o.x          ))
-			.attrPlug('y',            textPos.map(o=>o.y          ))
-			.attrPlug('writing-mode', textPos.map(o=>o.writingMode));
+		layerText.attrPlug({
+			x:              textPos.map(get('x')),
+			y:              textPos.map(get('y')),
+			'writing-mode': textPos.map(get('writingMode'))
+		});
 
 		return result;
 	}
