@@ -1,16 +1,19 @@
 import {Component, ChangeDetectorRef, ElementRef, EventEmitter} from '../../node_modules/angular2/core';
 import $                                                        from '../libs/jquery.es6.js';
 import join                                                     from 'lodash/fp/join';
+import get                                                      from 'lodash/fp/get';
+import defer                                                    from 'lodash/defer';
 import interact                                                 from '../libs/interact.js';
+import Kefir from '../libs/kefir.es6.js';
 
 import {sw} from '../util/misc.es6.js';
 
-import {property}           from '../canvas/ValueTracker.es6.js';
-import SvgDimensionedEntity from '../canvas/SvgDimensionedEntity.es6.js';
-import LyphTemplateBox      from '../canvas/LyphTemplateBox.es6.js';
-import NodeCircle           from '../canvas/NodeCircle.es6.js';
-import ProcessLine          from '../canvas/ProcessLine.es6.js';
-import LayerBorderLine      from '../canvas/LayerBorderLine.es6.js';
+import {property, event}  from '../canvas/ValueTracker.es6.js';
+import SvgContainerEntity from '../canvas/SvgContainerEntity.es6.js';
+import LyphTemplateBox    from '../canvas/LyphTemplateBox.es6.js';
+import NodeCircle         from '../canvas/NodeCircle.es6.js';
+import ProcessLine        from '../canvas/ProcessLine.es6.js';
+import LayerBorderLine    from '../canvas/LayerBorderLine.es6.js';
 
 
 @Component({
@@ -48,28 +51,38 @@ import LayerBorderLine      from '../canvas/LayerBorderLine.es6.js';
 
 	`]
 })
-export default class LyphCanvasComponent extends SvgDimensionedEntity {
+export default class LyphCanvasComponent extends SvgContainerEntity {
 
 	added = new EventEmitter;
 
-	@property({initial: false}) draggingSomething;
+	@property({initial: false}) draggingSomething; // TODO: make this hierarchical; a property of SvgContainerEntity
 	@property({initial: false}) resizingSomething;
 
+	@event() canvasResizedOrMoved;
+
 	constructor({nativeElement}: ElementRef, changeDetectorRef: ChangeDetectorRef) {
-		super({
-			model:  null,
-			parent: null
-		});
-		Object.assign(this, {
-			nativeElement,
-			changeDetectorRef
-		});
+		super({ model: null, parent: null });
+		Object.assign(this, { nativeElement, changeDetectorRef });
 	}
 
 	createElement() {
 		let result = $(this.nativeElement).find('#svg-canvas').css({ overflow: 'visible' });
-		result.attrPlug('viewBox', this.p(['x', 'y', 'width', 'height']).map(join(' ')));
+		result.attrPlug('viewBox', this.p(['cx', 'cy', 'cwidth', 'cheight']).map(join(' ')));
 		return result;
+	}
+	
+	plugContainerPositioning() {
+		defer(() => {
+			let canvasRect = Kefir.merge([
+				Kefir.once(),
+				Kefir.later(1000),
+				this.e('canvasResizedOrMoved')
+			]).map(() => this.element.getBoundingClientRect());
+			this.p('cx')     .plug(canvasRect.map(get('left'  )));
+			this.p('cy')     .plug(canvasRect.map(get('top'   )));
+			this.p('cwidth' ).plug(canvasRect.map(get('width' )));
+			this.p('cheight').plug(canvasRect.map(get('height')));
+		});
 	}
 
 	ngAfterViewInit() {

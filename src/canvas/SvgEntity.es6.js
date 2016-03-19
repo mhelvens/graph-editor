@@ -23,6 +23,11 @@ const deleted       = Symbol('deleted');
 		this.setParent(options.parent);
 		this.root.p('draggingSomething').plug(this.p('dragging'));
 		this.root.p('resizingSomething').plug(this.p('resizing'));
+
+		this.e('delete').onValue(() => {
+			for (let child of this.children) { child.delete() }
+			this.parent.children.delete(this);
+		});
 	}
 
 	setParent(newParent) {
@@ -45,15 +50,6 @@ const deleted       = Symbol('deleted');
 		for (let child of this.children) {
 			child.traverse(types, fn);
 		}
-	}
-
-	delete() {
-		if (this[deleted]) { return }
-		this[deleted] = true;
-		this.trigger('delete');
-		for (let child of this.children) { child.delete() }
-		this.parent.children.delete(this);
-		this.element.remove();
 	}
 
 	deleteClicker() {

@@ -2,7 +2,7 @@ import pick     from 'lodash/pick';
 import clone    from 'lodash/fp/clone';
 import clamp    from 'lodash/fp/clamp';
 import get      from 'lodash/fp/get';
-import _        from 'lodash/core';
+import _        from 'lodash';
 import Kefir    from '../libs/kefir.es6.js';
 import $        from '../libs/jquery.es6.js';
 import interact from '../libs/interact.js';
@@ -10,16 +10,16 @@ import interact from '../libs/interact.js';
 import {sw, uniqueId, inbetween} from '../util/misc.es6.js';
 import Resources                 from '../Resources.es6.js';
 
-import LayerTemplateBox     from './LayerTemplateBox.es6.js';
-import RotateClicker        from './RotateClicker.es6.js';
-import LayerBorderLine      from './LayerBorderLine.es6.js';
-import SvgDimensionedEntity from './SvgDimensionedEntity.es6.js';
+import LayerTemplateBox   from './LayerTemplateBox.es6.js';
+import RotateClicker      from './RotateClicker.es6.js';
+import LayerBorderLine    from './LayerBorderLine.es6.js';
+import SvgContainerEntity from './SvgContainerEntity.es6.js';
 
 
 const pluggedIntoParent = Symbol('pluggedIntoParent');
 
 
-export default class LyphTemplateBox extends SvgDimensionedEntity {
+export default class LyphTemplateBox extends SvgContainerEntity {
 
 	get axisThickness() { return 15                                                                   }
 	get minWidth     () { return 2 * (this.axisThickness + 1)                                         }
@@ -37,7 +37,7 @@ export default class LyphTemplateBox extends SvgDimensionedEntity {
 			.sortBy('position')
 			.map(model => new LayerTemplateBox({ parent: this, model }))
 			.value();
-		this._setLayerTemplateBoxPositions(); // TODO: let the template boxes do this for themselves
+		// this._setLayerTemplateBoxPositions(); // TODO: let the template boxes do this for themselves
 	}
 
 	createElement() {
@@ -96,42 +96,6 @@ export default class LyphTemplateBox extends SvgDimensionedEntity {
 			width:  this.p('width'),
 			height: this.p('height')
 		});
-
-		let layerRot = (rotation) => ({x, y, width, height}) => {
-			let w2h = this.height / this.width;
-			let h2w = (this.width - this.axisThickness) / (this.height - this.axisThickness);
-			x -= this.x;
-			y -= this.y;
-			switch (rotation) {
-				case 90: {
-					[x, y, width, height] = [
-						this.width - h2w * (y + height),
-						x      * w2h,
-						height * h2w,
-						width  * w2h
-					]
-				} break;
-				case 180: {
-					[x, y, width, height] = [
-						x,
-						this.height - y - height,
-						width,
-						height
-					]
-				} break;
-				case 270: {
-					[x, y, width, height] = [
-						h2w * y,
-						x      * w2h,
-						height * h2w,
-						width  * w2h
-					]
-				} break;
-			}
-			x += this.x;
-			y += this.y;
-			return {x, y, width, height};
-		};
 
 		let axisPos = this.xywhr.map(({x, y, width, height, rotation}) => sw(rotation)({
 			0: {
@@ -223,26 +187,10 @@ export default class LyphTemplateBox extends SvgDimensionedEntity {
 		});
 
 
-		/* add layer elements and change their positioning based on observed changes */
-		// TODO: make layers 'independent' like the other entities;
-		//     : give them lwidth, lheight, etc.
-		//     : those can be used for the 'required' layer thickness, rather than an even divide
-		//     : make sure to create a 'container rectangle' concept, so that the layers can ignore the lyph-template axis
+		/* add layer template boxes */
 		for (let lTBox of this.layerTemplateBoxes) {
-			const layerThickness = (height) => (height - this.axisThickness) / (this.model ? this.model.layers.length : 5);
 			result.children('.child-container').append(lTBox.element);
-			let layerPos = this.xywhr.map(({x, y, width, height, rotation}) => layerRot(rotation)({
-				x: x,
-				y: y + (this.layerTemplateBoxes.length - lTBox.model.position) * layerThickness(height),
-				width:  width,
-				height: layerThickness(height)
-			}));
-			lTBox.p('x')     .plug(layerPos.map(get('x')));
-			lTBox.p('y')     .plug(layerPos.map(get('y')));
-			lTBox.p('width') .plug(layerPos.map(get('width')));
-			lTBox.p('height').plug(layerPos.map(get('height')));
 		}
-
 
 		/* draggable layer dividers */
 		// TODO: put these borders everywhere (not just in between layers),
@@ -263,16 +211,24 @@ export default class LyphTemplateBox extends SvgDimensionedEntity {
 				},
 				onmove: ({dx, dy}) => {
 
-					switch (border.orientation) {
-						case 'horizontal': {
+					// TODO: bounds, checks, proper code
 
-							console.log('TODO: horizontal border dragging:', border.position);
-
+					switch (this.rotation) {
+						case 0: {
+							ltBox.thickness        = ltBox       .thickness.sub(dy);
+							joiningLtBox.thickness = joiningLtBox.thickness.add(dy);
 						} break;
-						case 'vertical': {
-
-							console.log('TODO: vertical border dragging', border.position);
-
+						case 90: {
+							ltBox.thickness        = ltBox       .thickness.add(dx);
+							joiningLtBox.thickness = joiningLtBox.thickness.sub(dx);
+						} break;
+						case 180: {
+							ltBox.thickness        = ltBox       .thickness.add(dy);
+							joiningLtBox.thickness = joiningLtBox.thickness.sub(dy);
+						} break;
+						case 270: {
+							ltBox.thickness        = ltBox       .thickness.sub(dx);
+							joiningLtBox.thickness = joiningLtBox.thickness.add(dx);
 						} break;
 					}
 
@@ -325,28 +281,50 @@ export default class LyphTemplateBox extends SvgDimensionedEntity {
 		return result;
 	}
 
-	_setLayerTemplateBoxPositions() {
-		for (let lTBox of this.layerTemplateBoxes) {
-			Object.assign(lTBox, {
-				width:  this.width,
-				height: this.layerHeight,
-				x:      this.x,
-				y:      this.y + (this.layerTemplateBoxes.length - lTBox.model.position) * this.layerHeight // from the axis upward
-			});
-		}
+	plugContainerPositioning() {
+		let containerDims = this.xywhr.map(({x, y, width, height, rotation}) => sw(rotation)({
+			0: {
+				cx:      x,
+				cy:      y,
+				cwidth:  width,
+				cheight: height - this.axisThickness
+			},
+			90: {
+				cx:      x + this.axisThickness,
+				cy:      y,
+				cwidth:  width - this.axisThickness,
+				cheight: height
+			},
+			180: {
+				cx:      x,
+				cy:      y + this.axisThickness,
+				cwidth:  width,
+				cheight: height - this.axisThickness
+			},
+			270: {
+				cx:      x,
+				cy:      y,
+				cwidth:  width - this.axisThickness,
+				cheight: height
+			}
+		}));
+		this.p('cx')     .plug(containerDims.map(get('cx'))     );
+		this.p('cy')     .plug(containerDims.map(get('cy'))     );
+		this.p('cwidth') .plug(containerDims.map(get('cwidth')) );
+		this.p('cheight').plug(containerDims.map(get('cheight')));
 	}
 
 	draggable() {
-		let raw, rootRect;
+		let raw;//, rootRect;
 		return {
 			autoScroll: true,
-			onstart: (event) => {
+			onstart: (event) => { // TODO: make streams for these events somewhere up the class hierarchy
 				event.stopPropagation();
 				this.moveToFront();
 
 				/* initialize interaction-local variables */
-				raw      = pick(this, 'x', 'y');
-				rootRect = this.root.boundingBox();
+				raw = pick(this, 'x', 'y');
+				// rootRect = this.root.boundingBox();
 			},
 			onmove: ({dx, dy}) => {
 				/* update raw coordinates */
@@ -359,8 +337,8 @@ export default class LyphTemplateBox extends SvgDimensionedEntity {
 				// TODO: snapping
 
 				/* restriction correction */
-				visible.x = clamp( rootRect.left, rootRect.left + rootRect.width  - this.width  )( visible.x );
-				visible.y = clamp( rootRect.top,  rootRect.top  + rootRect.height - this.height )( visible.y );
+				visible.x = clamp( this.root.cx, this.root.cx + this.root.cwidth  - this.width  )( visible.x );
+				visible.y = clamp( this.root.cy, this.root.cy + this.root.cheight - this.height )( visible.y );
 
 				/* set the actual visible coordinates */
 				Object.assign(this, visible);
@@ -396,22 +374,19 @@ export default class LyphTemplateBox extends SvgDimensionedEntity {
 				// TODO: snapping
 
 				/* restriction correction */
-				if (edges.left && visible.x < this.parent.x) {
-					visible.width = (visible.x + visible.width) - this.parent.x;
-					visible.x = this.parent.x;
+				if (edges.left && visible.x < this.parent.cx) {
+					visible.width = (visible.x + visible.width) - this.parent.cx;
+					visible.x = this.parent.cx;
 				}
-				if (edges.top && visible.y < this.parent.y) {
-					visible.height = (visible.y + visible.height) - this.parent.y;
-					visible.y = this.parent.y;
+				if (edges.top && visible.y < this.parent.cy) {
+					visible.height = (visible.y + visible.height) - this.parent.cy;
+					visible.y = this.parent.cy;
 				}
-				if (edges.right && visible.x + visible.width > this.parent.x + this.parent.width) {
-					visible.width = (this.parent.x + this.parent.width) - visible.x;
+				if (edges.right && visible.x + visible.width > this.parent.cx + this.parent.cwidth) {
+					visible.width = (this.parent.cx + this.parent.cwidth) - visible.x;
 				}
-				console.log(this.parent);
-				console.log(edges.bottom, visible.y, visible.height, this.parent.y, this.parent.height);
-				if (edges.bottom && visible.y + visible.height > this.parent.y + this.parent.height) {
-					console.log('   ---');
-					visible.height = (this.parent.y + this.parent.height) - visible.y;
+				if (edges.bottom && visible.y + visible.height > this.parent.cy + this.parent.cheight) {
+					visible.height = (this.parent.cy + this.parent.cheight) - visible.y;
 				}
 
 				/* set visible (x, y) based on snapping and restriction */

@@ -3,9 +3,10 @@ import isUndefined   from 'lodash/isUndefined';
 import isPlainObject from 'lodash/isPlainObject';
 import isArray       from 'lodash/isArray';
 import set           from 'lodash/set';
-import ldIsEqual     from 'lodash/isEqual';
+import isEqual       from 'lodash/isEqual';
 import Kefir         from '../libs/kefir.es6.js';
 import {assert}      from '../util/misc.es6.js';
+import Fraction, {equals} from '../libs/fraction.es6.js';
 
 
 /* symbols to private members */
@@ -60,9 +61,10 @@ export default class ValueTracker {
 
 		/* define the event stream */
 		let bus = new Kefir.Bus();
-		this.e('delete').onValue(bus.end);
+		// this.e('delete').onValue(bus.end);
 		this[events][name] = bus.takeUntilBy(this.e('delete'));
 		Object.assign(this[events][name], {
+
 			plug:   (observable) => {
 				bus.plug(observable);
 				return {
@@ -71,8 +73,15 @@ export default class ValueTracker {
 					}
 				};
 			},
+
 			unplug: bus.unplug,
-			emit:   bus.emit
+
+			emit:   bus.emit,
+
+			_name: name,
+			name: name,
+
+			owner: this
 		});
 		return this[events][name];
 	}
@@ -92,9 +101,9 @@ export default class ValueTracker {
 	 */
 	newProperty(name, {
 		settable = true,
-		isEqual  = ldIsEqual,
+		isEqual  = equals,
 		isValid  = ()=>true,
-		initial,
+		initial
 	} = {}) {
 		this[initialize]();
 
@@ -110,9 +119,13 @@ export default class ValueTracker {
 			isValid = (v) => includes(options, v)
 		}
 
+		/* bind functions to their proper context */
+		isValid = isValid.bind(this);
+		isEqual = isEqual.bind(this);
+
 		/* define the bus which manages the property */
 		let bus = new Kefir.Bus();
-		this.e('delete').take(1).onValue(bus.end);
+		// this.e('delete').take(1).onValue(bus.end);
 
 		/* define the property itself, and give it additional methods */
 		let hasInitial = (!isUndefined(initial) && isValid(initial));
@@ -126,15 +139,13 @@ export default class ValueTracker {
 		property.onValue((value) => { currentValue = value });
 
 		/* additional property methods */
-		let plugged = new Map;
 		Object.assign(property, {
 
 			plug(observable, passive, transform) {
 				if (Array.isArray(observable)) {
-					return this.plug(Kefir.combine(observable, passive, transform));
+					return this.plug(Kefir.combine(observable, passive, transform).skipDuplicates(equals));
 				} else {
-					let filteredObservable = isValid ? observable.filter(isValid) : observable;
-					plugged.set(observable, filteredObservable);
+					let filteredObservable = observable.filter(isValid);
 					bus.plug(filteredObservable);
 					return {
 						unplug: () => {
@@ -144,12 +155,17 @@ export default class ValueTracker {
 				}
 			},
 
-			get() { return currentValue }
+			get() { return currentValue },
+
+			name: name,
+			_name: name,
+
+			owner: this
 
 		}, settable && {
 
 			set(value) {
-				if (!isValid || isValid(value)) {
+				if (isValid(value)) {
 					bus.emit(value);
 				}
 				return property;
@@ -158,7 +174,7 @@ export default class ValueTracker {
 		});
 
 		/* make the property active; it doesn't work if this isn't done (the nature of Kefir.js) */
-		property.run();
+		property.run(); // TODO: check if this is still needed
 
 		/* return the property */
 		return property;
@@ -176,14 +192,7 @@ export default class ValueTracker {
 	 */
 	e(name) {
 		this[initialize]();
-
-		/* does the event exist? */
-		assert(() => this[events][name],
-			`There is no event '${name}' on this object.`);
-
-		/* return it */
 		return this[events][name];
-
 	}
 
 	/**
@@ -191,16 +200,17 @@ export default class ValueTracker {
 	 *
 	 * @public
 	 * @method
-	 * @param  {String} name - the name of the property to retrieve
+	 * @param  {String|Array} nameOrActiveDeps    - the name of the property to retrieve, or a list of active dependencies for a derived property
+	 * @param  {Array?}       optionalPassiveDeps - an optional list of passive dependencies for the derived property
+	 * @param  {Function?}    optionalTransformer - an optional function to map the dependencies to a new value for the derived property
 	 * @return {Kefir.Property} - the property associated with the given name
 	 */
-	p(name) {
+	p(nameOrActiveDeps, optionalPassiveDeps, optionalTransformer) {
 		this[initialize]();
-
-		if (isArray(name)) {
-			return Kefir.combine(name.map(n => this[properties][n]));
+		if (isArray(nameOrActiveDeps)) {
+			return Kefir.combine(nameOrActiveDeps.map(n => this[properties][n]), optionalPassiveDeps, optionalTransformer);
 		} else {
-			return this[properties][name];
+			return this[properties][nameOrActiveDeps];
 		}
 	}
 

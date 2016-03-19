@@ -8,32 +8,19 @@ import Kefir    from '../libs/kefir.es6.js';
 
 import {abs, sw} from '../util/misc.es6.js';
 
-import {property}       from './ValueTracker.es6.js';
-import SvgEntity        from './SvgEntity.es6.js';
+import SvgPositionedEntity        from './SvgPositionedEntity.es6.js';
 import LayerTemplateBox from './LayerTemplateBox.es6.js';
 import ProcessLine      from './ProcessLine.es6.js';
 
 
-export default class NodeCircle extends SvgEntity {
+export default class NodeCircle extends SvgPositionedEntity {
 
 	static IDLE_RADIUS     = 10;
 	static DRAGGING_RADIUS = 16;
 	static SNAP_DISTANCE   = 20;
 
-	@property({isValid: isFinite}) lx;
-	@property({isValid: isFinite}) ly;
-	@property({isValid: isFinite}) x;
-	@property({isValid: isFinite}) y;
-	// TODO: lx, ly be percentages (with epsilon-based equality); for now, they're in px
-
 	constructor(options) {
 		super(options);
-
-		this.p('lx').plug([this.p ('x'), this.parent.p('x')], (x, px)  =>  x - px);
-		this.p('ly').plug([this.p ('y'), this.parent.p('y')], (y, py)  =>  y - py);
-		this.p ('x').plug([this.p('lx'), this.parent.p('x')], (lx, px) => lx + px);
-		this.p ('y').plug([this.p('ly'), this.parent.p('y')], (ly, py) => ly + py);
-
 		Object.assign(this, pick(options, 'x', 'y'));
 	}
 
@@ -57,31 +44,33 @@ export default class NodeCircle extends SvgEntity {
 		/* observe values and alter view accordingly */
 		this.p('hovering').plug(shape.asKefirStream('mouseenter').map(()=>true ));
 		this.p('hovering').plug(shape.asKefirStream('mouseleave').map(()=>false));
-		center.attrPlug('cx', this.p('x')).attrPlug('cy', this.p('y'));
-		// shape .attrPlug({
-		// 	cx:
-		// });
-		shape .attrPlug('cx', this.p('x')).attrPlug('cy', this.p('y'));
-		shape .attrPlug('r', this.p('dragging').map((dragging) =>
-			dragging
-			? NodeCircle.DRAGGING_RADIUS
-			: NodeCircle.IDLE_RADIUS)
-		);
+		center.attrPlug({
+			cx: this.p('x'),
+			cy: this.p('y')
+		});
+		shape.attrPlug({
+			cx: this.p('x'),
+			cy: this.p('y'),
+			r: this.p('dragging').map((dragging) => dragging
+				? NodeCircle.DRAGGING_RADIUS
+				: NodeCircle.IDLE_RADIUS
+			)
+		});
 
 		/* delete button */
 		let deleteClicker = this.deleteClicker();
 		deleteClicker.element.appendTo(result.children('.delete-clicker'));
 
-		(deleteClicker.element)
-			.attrPlug('x', this.p('x').map(x => x + 12) )
-			.attrPlug('y', this.p('y').map(y => y - 12) );
+		(deleteClicker.element).attrPlug({
+			x: this.p('x').map(x => x + 12),
+			y: this.p('y').map(y => y - 12)
+		});
 
-		(deleteClicker.element)
-			.cssPlug('display', Kefir.combine([
-				this.p('hovering'),
-				deleteClicker.p('hovering'),
-				this.root.p('draggingSomething')
-			]).map(([h1, h2, d]) => (h1 || h2) && !d ? 'block' : 'none'));
+		(deleteClicker.element).cssPlug('display', Kefir.combine([
+			this.p('hovering'),
+			deleteClicker.p('hovering'),
+			this.root.p('draggingSomething')
+		]).map(([h1, h2, d]) => (h1 || h2) && !d ? 'block' : 'none'));
 
 		/* drawing process with a tool */
 		interact(shape[0]).on('down', async (event) => {

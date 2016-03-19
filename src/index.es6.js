@@ -108,26 +108,19 @@ import './index.scss';
 	let lyphCanvas = $('bootstrap > lyph-canvas').detach().appendTo(mainPanel).children().data('controller');
 
 	/* propagating resize events */
-	let canvasSize = Kefir.merge([
-		Kefir.once(),
-		Kefir.later(1000),
-		$(window).asKefirStream('resize'),
-	    Kefir.fromEvents(mainPanel.data('container'), 'resize')
-	]).map(() => lyphCanvas.element.getBoundingClientRect());
-	lyphCanvas.p('x')     .plug(canvasSize.map(get('left')));
-	lyphCanvas.p('y')     .plug(canvasSize.map(get('top')));
-	lyphCanvas.p('width' ).plug(canvasSize.map(get('width' )));
-	lyphCanvas.p('height').plug(canvasSize.map(get('height')));
+	let sizing = Kefir.merge([
+		Kefir.once(), Kefir.later(1000),
+		$(window).asKefirStream('resize')
+	]).map(() => ({ left: 0, top: 0, width: window.innerWidth, height: window.innerHeight }));
+	lyphCanvas.p('x')      .plug(sizing.map(get('window.left'  )));
+	lyphCanvas.p('y')      .plug(sizing.map(get('window.top'   )));
+	lyphCanvas.p('width' ) .plug(sizing.map(get('window.width' )));
+	lyphCanvas.p('height') .plug(sizing.map(get('window.height')));
 
-
-
-	$(window).resize((event) => {
-		console.log(
-			lyphCanvas.element.getBoundingClientRect().width,
-			lyphCanvas.element.getBoundingClientRect().height
-		);
-	});
-
+	lyphCanvas.e('canvasResizedOrMoved').plug(Kefir.merge([
+		Kefir.once(), Kefir.later(1000),
+		Kefir.fromEvents(mainPanel.data('container'), 'resize')
+	]));
 
 	/* Done */
 	console.info("Done.");

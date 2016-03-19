@@ -22,6 +22,9 @@ import ValueTracker, {property} from './ValueTracker.es6.js';
 			this._element.data('controller', this);
 			this._element.attr('controller', true);
 			this._makeInteractable(this._element);
+			this.e('delete').onValue(() => {
+				this._element.remove();
+			});
 		}
 		return this._element;
 	};

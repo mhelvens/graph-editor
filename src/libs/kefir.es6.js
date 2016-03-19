@@ -10,8 +10,8 @@ import invokeMap     from 'lodash/invokeMap'
 const plugInto = Symbol('plugInto');
 Object.assign($.fn, {
 
-	asKefirStream(eventName) {
-		return Kefir.fromEvents(this, eventName);
+	asKefirStream(eventName, transform) {
+		return Kefir.fromEvents(this, eventName, transform);
 	},
 
 	[plugInto](method, key, observable) {

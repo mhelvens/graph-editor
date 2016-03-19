@@ -1,9 +1,17 @@
 import $       from '../libs/jquery.es6.js';
 import chroma  from '../libs/chroma.es6.js';
 import get     from 'lodash/fp/get';
+import invokeMap from 'lodash/invokeMap';
+import take from 'lodash/take';
+import pick from 'lodash/pick';
+import defer from 'lodash/defer';
+import takeRight from 'lodash/takeRight';
+import Kefir from '../libs/kefir.es6.js';
+import Fraction, {isNumber, sum, equals} from '../libs/fraction.es6.js';
 
-import {uniqueId, sw}      from '../util/misc.es6.js';
-import SvgPositionedEntity from './SvgPositionedEntity.es6.js';
+import {property}          from './ValueTracker.es6.js';
+import {uniqueId, sw, swf} from '../util/misc.es6.js';
+import SvgContainerEntity  from './SvgContainerEntity.es6.js';
 
 
 const pluggedIntoParent = Symbol('pluggedIntoParent');
@@ -13,12 +21,97 @@ const backgroundColor   = Symbol('backgroundColor');
 const TEXT_PADDING = 6;
 
 
-export default class LayerTemplateBox extends SvgPositionedEntity {
+export default class LayerTemplateBox extends SvgContainerEntity {
+
+
+	@property({isValid: isNumber})  thickness;
+	@property({isValid: (v) => isNumber(v) && 0 <= v && v <= 1}) lthickness;
+
 
 	constructor(options) {
 		super(options);
-		this.p('rotation').plug(this.parent.p('rotation')); // TODO: this should be automatic by SvgDimensionedEntity
+
+		this.p('width') .plug(this.p('thickness').filterBy(this.p('orientation').value('vertical')  ));
+		this.p('height').plug(this.p('thickness').filterBy(this.p('orientation').value('horizontal')));
+
+		this.lthickness = Fraction(1, this.parent.model.layers.length); // initial thickness; TODO: adapt to model
+
 	}
+
+
+	setParent(newParent) {
+		super.setParent(newParent);
+
+		/* unplug any connections to the old parent */
+		invokeMap(this[pluggedIntoParent] || [], 'unplug');
+		this[pluggedIntoParent] = [];
+
+
+		if (!newParent) { return }
+
+
+		/* thickness change triggers */
+		let manualTrigger;
+		let triggers = [
+			this.p('orientation'),
+			this.parent.p('cheight'),
+			this.parent.p('cwidth'),
+		    Kefir.stream((emitter) => { manualTrigger = emitter.emit })
+		];
+
+		/* mutual dependency: lthickness -> thickness */
+		this.p('thickness').plug(
+			Kefir.combine([
+				this.p('lthickness'),
+				...triggers
+			], (lthickness) => sw(this.orientation)({
+				horizontal: ()=> lthickness.mul(this.parent.cheight),
+				vertical:   ()=> lthickness.mul(this.parent.cwidth)
+			}))
+		);
+
+		/* mutual dependency: thickness -> lthickness */
+		this.p('lthickness').plug(
+			Kefir.combine([
+				this.p('thickness'),
+				...triggers
+			], (thickness) => sw(this.orientation)({
+				horizontal: ()=> thickness.div(this.parent.cheight),
+				vertical:   ()=> thickness.div(this.parent.cwidth)
+			}))
+		);
+
+
+		defer(() => { // TODO: how to get rid of this defer (i.e., why can the below not be done synchronously?)
+
+			/* make connections to the new parent */
+			const _px = this.parent.p('cx');
+			const _py = this.parent.p('cy');
+			const _pw = this.parent.p('cwidth');
+			const _ph = this.parent.p('cheight');
+			const _r  = this.p('rotation'); // TODO: just take own rotation, since it's there
+			const _t  = this.p('thickness');
+
+			let allLayers = this.parent.layerTemplateBoxes;
+			let _thicknessInward  = Kefir.combine([Kefir.constant(Fraction(0)), ...allLayers.filter(l => l.model.position < this.model.position).map(lTBox => lTBox.p('thickness'))]).map(sum);
+			let _thicknessOutward = Kefir.combine([Kefir.constant(Fraction(0)), ...allLayers.filter(l => l.model.position > this.model.position).map(lTBox => lTBox.p('thickness'))]).map(sum);
+
+			let xywh = Kefir.combine([_px, _py, _pw, _ph, _r, _t, _thicknessInward, _thicknessOutward]).map(([px, py, pw, ph, r, t, tIn, tOut]) => sw(r)({
+				0:   { x: px,        y: py + tOut, width: pw, height: t  },
+				90:  { x: px + tIn,  y: py,        width: t,  height: ph },
+				180: { x: px,        y: py + tIn,  width: pw, height: t  },
+				270: { x: px + tOut, y: py,        width: t,  height: ph },
+			}));
+
+			this.p('x')     .plug(xywh.map(get('x')     ));
+			this.p('y')     .plug(xywh.map(get('y')     ));
+			this.p('width') .plug(xywh.map(get('width') ));
+			this.p('height').plug(xywh.map(get('height')));
+
+			manualTrigger();
+
+		});
+	};
 
 	createElement() {
 		/* main HTML */
@@ -66,11 +159,9 @@ export default class LayerTemplateBox extends SvgPositionedEntity {
 			width:  this.p('width'),
 			height: this.p('height')
 		});
-		let textPos = this.p(['width', 'rotation']).map(([width, rotation]) => sw(rotation)({
-			0:   { x: TEXT_PADDING,         y: TEXT_PADDING, writingMode: 'horizontal-tb' },
-			90:  { x: width - TEXT_PADDING, y: TEXT_PADDING, writingMode: 'vertical-rl'   },
-			180: { x: TEXT_PADDING,         y: TEXT_PADDING, writingMode: 'horizontal-tb' },
-			270: { x: width - TEXT_PADDING, y: TEXT_PADDING, writingMode: 'vertical-rl'   }
+		let textPos = this.p(['width', 'orientation']).map(([width, orientation]) => sw(orientation)({
+			horizontal: { x: TEXT_PADDING,         y: TEXT_PADDING, writingMode: 'horizontal-tb' },
+			vertical:   { x: width - TEXT_PADDING, y: TEXT_PADDING, writingMode: 'vertical-rl'   }
 		}));
 		layerText.attrPlug({
 			x:              textPos.map(get('x')),

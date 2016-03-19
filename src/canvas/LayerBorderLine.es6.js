@@ -3,6 +3,7 @@ import isFinite from 'lodash/isFinite';
 import get      from 'lodash/fp/get';
 import $        from '../libs/jquery.es6.js';
 import Kefir    from '../libs/kefir.es6.js';
+import {isNumber} from '../libs/fraction.es6.js';
 
 import {sw, swf} from '../util/misc.es6.js';
 
@@ -20,7 +21,7 @@ export default class LayerBorderLine extends SvgEntity {
 	handle;
 
 	@property({isValid: ['horizontal', 'vertical']}) orientation;
-	@property({isValid: isFinite                  }) position;
+	@property({isValid: isNumber                  }) position;
 
 	constructor(options) {
 		super(options);
@@ -80,12 +81,17 @@ export default class LayerBorderLine extends SvgEntity {
 		const lines = result.children('line');
 
 		/* alter DOM based on observed changes */
-		this.p('hovering').plug(this.handle.asKefirStream('mouseenter').map(()=>true ));
-		this.p('hovering').plug(this.handle.asKefirStream('mouseleave').map(()=>false));
+		this.p('hovering').plug(this.handle.asKefirStream('mouseenter').map(()=>true ).takeUntilBy(this.e('delete')));
+		this.p('hovering').plug(this.handle.asKefirStream('mouseleave').map(()=>false).takeUntilBy(this.e('delete')));
 		this.p('orientation').onValue((orientation) => {
 			this.handle.toggleClass('horizontal-border', orientation === 'horizontal');
 			this.handle.toggleClass('vertical-border',   orientation === 'vertical'  );
 		});
+
+		this.handle.cssPlug('cursor', this.p('orientation').map(swf({
+			horizontal: 'row-resize',
+			vertical:   'col-resize'
+		})));
 
 		let x1, y1, x2, y2;
 		let positioning = Kefir.combine([

@@ -3,16 +3,21 @@
     <words>
       <w>artefact</w>
       <w>artefacts</w>
+      <w>cheight</w>
       <w>coords</w>
+      <w>cwidth</w>
       <w>darkblue</w>
       <w>darkred</w>
       <w>defs</w>
+      <w>deps</w>
       <w>dropzone</w>
       <w>interactable</w>
       <w>jsviews</w>
       <w>kefir</w>
       <w>lheight</w>
+      <w>lorientation</w>
       <w>lrotation</w>
+      <w>lthickness</w>
       <w>lwidth</w>
       <w>lyph</w>
       <w>miterlimit</w>
@@ -27,6 +32,7 @@
       <w>onmove</w>
       <w>onstart</w>
       <w>pred</w>
+      <w>resized</w>
       <w>resizeend</w>
       <w>resizemove</w>
       <w>superagent</w>

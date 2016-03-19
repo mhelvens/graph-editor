@@ -27,6 +27,7 @@ export default class Clicker extends SvgObject {
 		this.decorateCircle(circle);
 
 		/* observables */
+		circle.mousedown((e) => { e.preventDefault() });
 		this.clicks.plug(circle.asKefirStream('click'));
 		this.p('hovering').plug(circle.asKefirStream('mouseenter').map(()=>true ));
 		this.p('hovering').plug(circle.asKefirStream('mouseleave').map(()=>false));

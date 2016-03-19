@@ -48,6 +48,7 @@
     "chroma-js": "~1",
     "core-decorators": "coldrye-collaboration/core-decorators.js.git#7884358",
     "es6-shim": "~0.33",
+    "fraction.js": "^3.2.5",
     "get-parameter-names": "^0.2.0",
     "golden-colors": "^2.0.0",
     "golden-layout": "^1.0.10",
