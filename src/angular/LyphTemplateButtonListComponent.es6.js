@@ -2,7 +2,7 @@ import {Component, EventEmitter} from '../../node_modules/angular2/core';
 import $                         from 'jquery';
 
 import LyphTemplateButtonComponent from './LyphTemplateButtonComponent.es6.js';
-import Resources, {request} from '../Resources.es6.js';
+import LyphTemplate                from '../resources/LyphTemplate.es6.js';
 
 
 @Component({
@@ -61,8 +61,8 @@ export default class LyphTemplateButtonListComponent {
 	activeTool;
 	activeToolChange = new EventEmitter;
 
-	constructor(resources: Resources) {
-		this.models = resources.getAllResources_sync()['lyphTemplates'];
+	constructor() {
+		this.models = LyphTemplate.getAll_sync();
 	}
 
 	filterText(model) { return model.name }

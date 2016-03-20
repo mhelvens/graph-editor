@@ -12,7 +12,7 @@ import MiscToolButtonsListComponent     from './angular/MiscToolButtonsListCompo
 import ProcessTypeButtonListComponent   from './angular/ProcessTypeButtonListComponent.es6.js';
 import LyphTemplateButtonListComponent  from './angular/LyphTemplateButtonListComponent.es6.js';
 import CanonicalTreeButtonListComponent from './angular/CanonicalTreeButtonListComponent.es6.js';
-import Resources                        from './Resources.es6.js';
+import Resources                        from 'resources/ResourceFetcher.es6.js';
 
 /* styling */
 import './index.scss';

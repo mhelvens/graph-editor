@@ -31,11 +31,10 @@ export default class LayerTemplateBox extends SvgContainerEntity {
 	constructor(options) {
 		super(options);
 
+		Object.assign(this, pick(options, 'thickness', 'lthickness'));
+
 		this.p('width') .plug(this.p('thickness').filterBy(this.p('orientation').value('vertical')  ));
 		this.p('height').plug(this.p('thickness').filterBy(this.p('orientation').value('horizontal')));
-
-		this.lthickness = Fraction(1, this.parent.model.layers.length); // initial thickness; TODO: adapt to model
-
 	}
 
 
@@ -93,6 +92,7 @@ export default class LayerTemplateBox extends SvgContainerEntity {
 			const _t  = this.p('thickness');
 
 			let allLayers = this.parent.layerTemplateBoxes;
+
 			let _thicknessInward  = Kefir.combine([Kefir.constant(Fraction(0)), ...allLayers.filter(l => l.model.position < this.model.position).map(lTBox => lTBox.p('thickness'))]).map(sum);
 			let _thicknessOutward = Kefir.combine([Kefir.constant(Fraction(0)), ...allLayers.filter(l => l.model.position > this.model.position).map(lTBox => lTBox.p('thickness'))]).map(sum);
 

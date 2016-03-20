@@ -1,7 +1,7 @@
 import {Component, EventEmitter} from '../../node_modules/angular2/core';
 
 import ProcessTypeButtonComponent from './ProcessTypeButtonComponent.es6.js';
-import Resources, {request} from '../Resources.es6.js';
+import ProcessType from '../resources/ProcessType.es6.js';
 
 
 @Component({
@@ -60,8 +60,8 @@ export default class ProcessTypeButtonListComponent {
 	activeTool;
 	activeToolChange = new EventEmitter;
 
-	constructor(resources: Resources) {
-		this.models = resources.getAllResources_sync()['processTypes'];
+	constructor() {
+		this.models = ProcessType.getAll_sync();
 	}
 
 	filterText(model) { return model.name }

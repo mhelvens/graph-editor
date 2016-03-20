@@ -6,9 +6,9 @@ import _        from 'lodash';
 import Kefir    from '../libs/kefir.es6.js';
 import $        from '../libs/jquery.es6.js';
 import interact from '../libs/interact.js';
+import Fraction from '../libs/fraction.es6.js';
 
 import {sw, uniqueId, inbetween} from '../util/misc.es6.js';
-import Resources                 from '../Resources.es6.js';
 
 import LayerTemplateBox   from './LayerTemplateBox.es6.js';
 import RotateClicker      from './RotateClicker.es6.js';
@@ -30,14 +30,13 @@ export default class LyphTemplateBox extends SvgContainerEntity {
 	constructor(options) {
 		super(options);
 
-		/* create the layers */
-		let resources = new Resources;
-		this.layerTemplateBoxes = _(this.model.layers)
-			.map(id => resources.getResource_sync('layerTemplates', id))
-			.sortBy('position')
-			.map(model => new LayerTemplateBox({ parent: this, model }))
-			.value();
-		// this._setLayerTemplateBoxPositions(); // TODO: let the template boxes do this for themselves
+		/* create the layer template boxes*/
+		this.layerTemplateBoxes = _(this.model.getLayers()).sortBy('position').map(layer => new LayerTemplateBox({
+			parent:     this,
+			model:      layer,
+			lthickness: Fraction(layer.representativeThickness || this.model.averageLayerThickness)
+			            .div(this.model.representativeThickness)
+		})).value();
 	}
 
 	createElement() {
@@ -358,13 +357,20 @@ export default class LyphTemplateBox extends SvgContainerEntity {
 				/* initialize interaction-local variables */
 				raw  = pick(this, 'x', 'y', 'width', 'height');
 			},
-			onmove: ({rect, edges}) => {
-
+			onmove: ({rect, edges, ctrlKey, interaction}) => {
 				let proposedRect = this.pageToCanvas(rect);
 
 				/* update raw coordinates */
 				raw.width  = Math.max(proposedRect.width,  this.minWidth );
 				raw.height = Math.max(proposedRect.height, this.minHeight);
+
+				/* maintain aspect ratio */
+				if (ctrlKey) {
+					let correctedSize = this.model.maintainRepresentativeAspectRatio(raw);
+					if (correctedSize) { Object.assign(raw, correctedSize) }
+				}
+
+				/* correct for left and top edge dragging */
 				if (edges.left) { raw.x = proposedRect.left - (raw.width  - proposedRect.width ) }
 				if (edges.top)  { raw.y = proposedRect.top  - (raw.height - proposedRect.height) }
 

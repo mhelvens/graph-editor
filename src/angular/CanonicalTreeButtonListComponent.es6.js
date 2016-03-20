@@ -2,7 +2,7 @@ import {Component, EventEmitter} from '../../node_modules/angular2/core';
 import $                         from 'jquery';
 
 import CanonicalTreeButtonComponent from './CanonicalTreeButtonComponent.es6.js';
-import Resources, {request} from '../Resources.es6.js';
+import CanonicalTree from '../resources/CanonicalTree.es6.js';
 
 
 @Component({
@@ -61,8 +61,8 @@ export default class CanonicalTreeButtonListComponent {
 	activeTool;
 	activeToolChange = new EventEmitter;
 
-	constructor(resources: Resources) {
-		this.models = resources.getAllResources_sync()['canonicalTrees'];
+	constructor() {
+		this.models = CanonicalTree.getAll_sync();
 	}
 
 	filterText(model) { return model.name }
