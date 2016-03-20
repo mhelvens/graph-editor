@@ -1,6 +1,7 @@
 import Fraction from '../libs/fraction.es6.js';
 
-import Resource from './Resource.es6.js';
+import Resource     from './Resource.es6.js';
+import LyphTemplate from './LyphTemplate.es6.js';
 
 
 export default class LayerTemplate extends Resource {
@@ -9,6 +10,14 @@ export default class LayerTemplate extends Resource {
 
 	constructor(data) {
 		super(data);
+	}
+
+	getLyphTemplate() {
+		return LyphTemplate.get_sync(this.lyphTemplate);
+	}
+
+	getMaterials() {
+		return LyphTemplate.get_sync(this.materials);
 	}
 
 	get representativeThickness() {

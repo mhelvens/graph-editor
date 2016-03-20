@@ -1,5 +1,6 @@
 import {abstract} from 'core-decorators';
 import identity   from 'lodash/identity';
+import pick       from 'lodash/pick';
 import interact   from '../libs/interact.js';
 
 import ValueTracker, {property} from './ValueTracker.es6.js';
@@ -13,15 +14,31 @@ import ValueTracker, {property} from './ValueTracker.es6.js';
 	@property({initial: false}) resizing;
 	@property({initial: false}) hovering;
 
+	interactive = true;
+
 
 	// public //////////////////////////////////////////////////////////////////////////////////////
 
+	constructor(options) {
+		super(options);
+		Object.assign(this, pick(options, 'interactive'));
+	}
+
 	get element() {
 		if (!this._element) {
+			if (this.creatingElement) {
+				throw new Error(`This element is already being created. Do not use 'this.element' during the creation process.`);
+			}
+			this.creatingElement = true;
 			this._element = this.createElement();
+			delete this.creatingElement;
 			this._element.data('controller', this);
 			this._element.attr('controller', true);
-			this._makeInteractable(this._element);
+			if (this.interactive === false) {
+				this._element.css({ pointerEvents: 'none' });
+			} else {
+				this._makeInteractable(this._element);
+			}
 			this.e('delete').onValue(() => {
 				this._element.remove();
 			});

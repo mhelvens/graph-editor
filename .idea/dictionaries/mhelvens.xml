@@ -3,8 +3,10 @@
     <words>
       <w>artefact</w>
       <w>artefacts</w>
+      <w>cbottom</w>
       <w>cheight</w>
       <w>coords</w>
+      <w>cright</w>
       <w>cwidth</w>
       <w>darkblue</w>
       <w>darkred</w>
@@ -14,8 +16,10 @@
       <w>interactable</w>
       <w>jsviews</w>
       <w>kefir</w>
+      <w>lbottom</w>
       <w>lheight</w>
       <w>lorientation</w>
+      <w>lright</w>
       <w>lrotation</w>
       <w>lthickness</w>
       <w>lwidth</w>
@@ -36,6 +40,7 @@
       <w>resizeend</w>
       <w>resizemove</w>
       <w>superagent</w>
+      <w>uniq</w>
       <w>vals</w>
     </words>
   </dictionary>

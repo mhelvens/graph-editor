@@ -10,6 +10,7 @@ import DeleteClicker from './DeleteClicker.es6.js';
 const deleteClicker = Symbol('deleteClicker');
 const deleted       = Symbol('deleted');
 
+
 @abstract export default class SvgEntity extends SvgObject {
 
 	model;
@@ -20,6 +21,7 @@ const deleted       = Symbol('deleted');
 	constructor(options) {
 		super(options);
 		Object.assign(this, pick(options, 'model'));
+
 		this.setParent(options.parent);
 		this.root.p('draggingSomething').plug(this.p('dragging'));
 		this.root.p('resizingSomething').plug(this.p('resizing'));
@@ -30,7 +32,21 @@ const deleted       = Symbol('deleted');
 		});
 	}
 
+	hasAncestor(pred) {
+		return pred(this) || this.parent && this.parent.hasAncestor(pred);
+	}
+
 	setParent(newParent) {
+		/* check for nesting of model-sharing svg entities */
+		let entity = newParent;
+		while (entity) {
+			if (entity.model === this.model) {
+				throw new Error(`Nesting Error: Cannot set the parent of this entity to an entity that has a model that is a descendant of the model of this one.`);
+			}
+			entity = entity.parent;
+		}
+
+		/* actually set parent */
 		if (this.parent) { this.parent.children.delete(this) }
 		this.parent = newParent;
 		if (this.parent) {

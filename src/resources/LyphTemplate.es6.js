@@ -17,7 +17,7 @@ export default class LyphTemplate extends Resource {
 		super(data);
 	}
 
-	getLayers() {
+	getLayerTemplates() {
 		if (!this[layerModels]) {
 			this[layerModels] = LayerTemplate.get_sync(this.layers);
 		}
@@ -25,7 +25,7 @@ export default class LyphTemplate extends Resource {
 	}
 
 	get representativeThickness() {
-		return this.averageLayerThickness * this.getLayers().length;
+		return this.averageLayerThickness * this.getLayerTemplates().length;
 	}
 	
 	get averageLayerThickness() {

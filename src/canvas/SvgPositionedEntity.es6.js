@@ -38,10 +38,10 @@ const pluggedIntoParent = Symbol('pluggedIntoParent');
 
 
 		/* make connections to the new parent */
-		const _px  = this.parent.p('cx')      || this.parent.p('x');
-		const _py  = this.parent.p('cy')      || this.parent.p('y');
-		const _pw  = this.parent.p('cwidth')  || this.parent.p('width');
-		const _ph  = this.parent.p('cheight') || this.parent.p('height');
+		const _px  = this.parent.p('cx');
+		const _py  = this.parent.p('cy');
+		const _pw  = this.parent.p('cwidth');
+		const _ph  = this.parent.p('cheight');
 		const _pxd = _px.diff((prev, next) => next - prev, this.parent.cx);
 		const _pyd = _py.diff((prev, next) => next - prev, this.parent.cy);
 		const _x   = this.p('x');

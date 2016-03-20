@@ -61,7 +61,10 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 	@event() canvasResizedOrMoved;
 
 	constructor({nativeElement}: ElementRef, changeDetectorRef: ChangeDetectorRef) {
-		super({ model: null, parent: null });
+		super({
+			model:  { type: 'Canvas', id: -1 }, // TODO: real canvas models
+			parent: null
+		});
 		Object.assign(this, { nativeElement, changeDetectorRef });
 	}
 

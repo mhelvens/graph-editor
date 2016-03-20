@@ -2,16 +2,17 @@ import $       from '../libs/jquery.es6.js';
 import chroma  from '../libs/chroma.es6.js';
 import get     from 'lodash/fp/get';
 import invokeMap from 'lodash/invokeMap';
-import take from 'lodash/take';
 import pick from 'lodash/pick';
+import toPairs from 'lodash/toPairs';
 import defer from 'lodash/defer';
-import takeRight from 'lodash/takeRight';
 import Kefir from '../libs/kefir.es6.js';
 import Fraction, {isNumber, sum, equals} from '../libs/fraction.es6.js';
 
 import {property}          from './ValueTracker.es6.js';
 import {uniqueId, sw, swf} from '../util/misc.es6.js';
 import SvgContainerEntity  from './SvgContainerEntity.es6.js';
+import LyphTemplateBox     from './LyphTemplateBox.es6.js';
+import ErrorBox            from './ErrorBox.es6.js';
 
 
 const pluggedIntoParent = Symbol('pluggedIntoParent');
@@ -35,6 +36,49 @@ export default class LayerTemplateBox extends SvgContainerEntity {
 
 		this.p('width') .plug(this.p('thickness').filterBy(this.p('orientation').value('vertical')  ));
 		this.p('height').plug(this.p('thickness').filterBy(this.p('orientation').value('horizontal')));
+
+		/* create the layer template boxes*/
+
+		this.materialBoxes = [];
+		this.materialBoxes = _(this.model.getMaterials()).map(lyph => {
+			if (this.hasAncestor(entity => entity.model === lyph)) {
+				return new ErrorBox({
+					model: {
+						type: 'Error',
+						message: "nesting"
+					}
+				});
+			} // nesting cycle
+			return new LyphTemplateBox({
+				parent:      this,
+				model:       lyph,
+				interactive: false
+			});
+		}).filter().value();
+
+
+		if (this.materialBoxes.length > 0) {
+			const margin = 0.02;
+			let widthPerBox  = Fraction(1 - margin).div(this.materialBoxes.length + 1);
+			let boxWidth     = widthPerBox.sub(margin);
+			let heightPerBox = Fraction(1 - margin).div(3);
+			let boxHeight    = heightPerBox.sub(margin);
+			console.log(widthPerBox.toString());
+			for (let [i, mb] of toPairs(this.materialBoxes)) {
+				i = parseInt(i);
+					// console.log(`${i}     * ${widthPerBox} = ${widthPerBox.mul(i)}`);
+					// console.log(`(${i}+1) * ${widthPerBox} = ${widthPerBox.mul(i+1)}`);
+				mb.p('lx')     .plug(this.p(['x', 'width'],  (x, width)  => Fraction(1).sub(widthPerBox.mul(i+1)) ));
+				mb.p('ly')     .plug(this.p(['y', 'height'], (y, height) => Fraction(1).sub(heightPerBox)         ));
+				mb.p('lwidth' ).plug(this.p(['width'],       (width)     => boxWidth                              ));
+				mb.p('lheight').plug(this.p(['height'],      (height)    => boxHeight                             ));
+			}
+		}
+
+
+
+
+
 	}
 
 
@@ -127,6 +171,7 @@ export default class LayerTemplateBox extends SvgContainerEntity {
 					</defs>
 					<text clip-path="url(#${clipPathId})"> ${this.model.name || ''} (${this.model.id}) </text>
 				</svg>
+				<g class="material-container"></g>
 				<g class="child-container"></g>
 			</g>
 		`);
@@ -151,6 +196,7 @@ export default class LayerTemplateBox extends SvgContainerEntity {
 			pointerEvents:    'none',
 			dominantBaseline: 'text-before-edge'
 		});
+		const materialContainer = result.children('.material-container');
 
 		/* alter DOM based on observed changes */
 		layerTemplateBounds.attrPlug({
@@ -168,6 +214,9 @@ export default class LayerTemplateBox extends SvgContainerEntity {
 			y:              textPos.map(get('y')),
 			'writing-mode': textPos.map(get('writingMode'))
 		});
+
+		/* put materials */
+		for (let mb of this.materialBoxes) { materialContainer.append(mb.element) }
 
 		return result;
 	}

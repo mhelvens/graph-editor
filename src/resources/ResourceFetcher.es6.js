@@ -1,5 +1,8 @@
-export const request = require('./../libs/superagent.es6.js').default;
-import {sw, withoutDuplicates} from './../util/misc.es6.js';
+export const request = require('../libs/superagent.es6.js').default;
+import {sw, withoutDuplicates} from '../util/misc.es6.js';
+import flatten                 from 'lodash/flatten';
+import uniq                    from 'lodash/uniq';
+import get                     from 'lodash/fp/get';
 
 // TODO: integrate this functionality with Resource.es6.js
 
@@ -68,7 +71,11 @@ export default class Resources {
 
 	async preloadAllResources() {
 		await this[fetchResources]('layerTemplates');
-		await this[fetchSpecificResources]('lyphTemplates', this.getAllResources_sync().layerTemplates.map(lt => lt.lyphTemplate));
+		let layerTemplates = this.getAllResources_sync().layerTemplates;
+		await this[fetchSpecificResources]('lyphTemplates', uniq([
+			...        layerTemplates.map(get('lyphTemplate')),
+			...flatten(layerTemplates.map(get('materials'   )))
+		]));
 		await this[fetchResources]('canonicalTrees');
 		await this[fetchResources]('processTypes');
 	}
@@ -90,7 +97,7 @@ export default class Resources {
 			'LyphTemplate':  'lyphTemplates',
 			'LayerTemplate': 'layerTemplates',
 			'CanonicalTree': 'canonicalTrees',
-			'ProcessType': 'processTypes'
+			'ProcessType':   'processTypes'
 		});
 		let newResource = (await request.post(`/${endpoint}/${id}`).send(resource)).body[0];
 		Object.assign(this[models][endpoint][id], newResource);
