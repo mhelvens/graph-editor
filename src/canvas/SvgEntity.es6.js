@@ -120,17 +120,27 @@ const deleted       = Symbol('deleted');
 		else          { handle = this.element.find(handle)   }
 		if (!tracker) { tracker = handle                     }
 		else          { tracker = this.element.find(tracker) }
+
+		let interactable = interact(tracker[0]);
+
 		event.interaction.start(
 			{ name: 'resize', edges },
-			interact(tracker[0]),
+			interactable,
 			tracker[0]
 		);
+
 		return new Promise((resolve) => {
-			interact(tracker[0]).on('resizeend', function onResizeEnd() {
-				interact(tracker[0]).off('resizeend', onResizeEnd);
-				resolve(this);
-			}.bind(this));
+			Kefir.merge([
+				Kefir.fromEvents(interactable, 'resizeend').map(()=>({ status: 'finished' })),
+				$('body').asKefirStream('keyup').which(27) .map(()=>({ status: 'aborted'  }))
+			]).take(1).onValue(resolve);
 		});
+		// return new Promise((resolve) => {
+		// 	interact(tracker[0]).on('resizeend', function onResizeEnd() {
+		// 		interact(tracker[0]).off('resizeend', onResizeEnd);
+		// 		resolve(this);
+		// 	}.bind(this));
+		// });
 	}
 
 	// to override

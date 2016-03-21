@@ -104,7 +104,7 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 
 			sw(this.activeTool.form)({
 				'box':             ()=> this.deployTool_LyphTemplateBox(event, mouseCoords),
-				'node':            ()=> this.deployTool_NodeCircle     (event, mouseCoords),
+				// 'node':            ()=> this.deployTool_NodeCircle     (event, mouseCoords),
 				'process':         ()=> this.deployTool_ProcessLine    (event, mouseCoords),
 				'conveyedProcess': ()=> this.deployTool_ProcessLine    (event, mouseCoords)
 			});
@@ -140,15 +140,15 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 		};
 	}
 
-	deployTool_NodeCircle(event, {x, y}) {
-		let node = new NodeCircle({
-			parent: this,
-			model : { id: -1, name: 'test node' }, // TODO: real node models
-			x, y
-		});
-		this.element.find('.svg-nodes').append(node.element);
-		return node.startDraggingBy(event);
-	};
+	// deployTool_NodeCircle(event, {x, y}) {
+	// 	let node = new NodeCircle({
+	// 		parent: this,
+	// 		model : { id: -1, name: 'test node' }, // TODO: real node models
+	// 		x, y
+	// 	});
+	// 	this.element.find('.svg-nodes').append(node.element);
+	// 	return node.startDraggingBy(event);
+	// };
 	
 	async deployTool_ProcessLine(event, {source = this._lastNodeTarget, target, x, y}) {
 		let process = new ProcessLine({
@@ -185,19 +185,20 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 				this.activeTool = null;
 			} break;
 		}
-
-
-
 	};
 
-	deployTool_LyphTemplateBox(event, {x, y}) {
+	async deployTool_LyphTemplateBox(event, {x, y}) {
 		let lyphTemplateBox = new LyphTemplateBox({
 			parent: this,
 			model : this.activeTool.model,
 			x, y
 		});
 		this.appendChildElement(lyphTemplateBox);
-		return lyphTemplateBox.startResizingBy(event);
+		let result = await lyphTemplateBox.startResizingBy(event);
+		if (result.status === 'aborted') {
+			lyphTemplateBox.delete();
+		}
+		this.activeTool = null;
 	};
 
 	appendChildElement(newChild) {

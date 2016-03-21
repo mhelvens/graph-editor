@@ -20,7 +20,7 @@ const LINE_ICON      = require('../img/draw-line.png');
 	template: `
 
 		<div class="icon icon-LyphTemplate"></div>
-		<div class="text-content" [innerHtml]="(model.name + ' ('+model.id+')'+(activeTool ? activeTool.form : '')) | escapeHTML | underlineSubstring:highlight"></div>
+		<div class="text-content" [innerHtml]="(model.name + ' ('+model.id+')') | escapeHTML | underlineSubstring:highlight"></div>
 
 		<div class="buttons">
 			<div class="button box "    [class.active]="toolSelected('box',     activeTool)" (click)=" setTool('box'    ) "></div>
