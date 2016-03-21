@@ -98,7 +98,7 @@ Object.assign(Kefir.Stream.prototype, {
 	// Filter events to only certain keys / buttons. Can be a predicate function or single number.
 	which(buttonId) {
 		const pred = isFunction(buttonId) ? buttonId : (b => b === buttonId);
-		return this.filter(e => pred(e.which));
+		return this.filter(e => pred(e.which || e.keyCode));
 	}
 
 });

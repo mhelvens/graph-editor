@@ -9,9 +9,9 @@ import {Component, EventEmitter, Inject} from '../../node_modules/angular2/core'
 	inputs: ['model', 'highlight', 'activeTool'],
 	events: ['activeToolChange'],
 	host: {
-		'[class.resource-view]': ` true                          `,
-		'[title]':               ` model.name                    `,
-		'[class.active]':        ` toolSelected('*', activeTool) `
+		'[class.resource-view]': ` true                                        `,
+		'[title]':               ` model.name                                  `,
+		'[class.active]':        ` toolSelected(['box','process'], activeTool) `
 	},
 	template: `
 
@@ -89,7 +89,7 @@ export default class ProcessTypeButtonComponent {
 	toolSelected(form) {
 		return  this.activeTool                      &&
 		        this.activeTool.model === this.model &&
-		       (this.activeTool.form  === form || form === '*');
+		       (this.activeTool.form  === form || Array.isArray(form) && (this.activeTool.form === form[0] || this.activeTool.form === form[1]));
 	}
 
 	setTool(form) {

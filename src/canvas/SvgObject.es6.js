@@ -50,49 +50,6 @@ import ValueTracker, {property} from './ValueTracker.es6.js';
 		return this.root.pageToCanvas(positioning);
 	}
 
-	boundingBox() {
-		return this.pageToCanvas(this.element.getBoundingClientRect());
-	}
-
-	startDraggingBy(event) {
-		let {handle, tracker} = this.draggable();
-		if (!handle)  { handle = this.element                }
-		else          { handle = this.element.find(handle)   }
-		if (!tracker) { tracker = handle                     }
-		else          { tracker = this.element.find(tracker) }
-		interact(tracker[0]).rectChecker(element => element.getBoundingClientRect());
-		event.interaction.start(
-			{ name: 'drag' },
-			interact(tracker[0]),
-			tracker[0]
-		);
-		return new Promise((resolve) => {
-			interact(tracker[0]).on('dragend', function onDragEnd() {
-				interact(tracker[0]).off('dragend', onDragEnd);
-				resolve(this);
-			}.bind(this));
-		});
-	}
-
-	startResizingBy(event, edges = { bottom: true, right: true }) {
-		let {handle, tracker} = this.resizable();
-		if (!handle)  { handle = this.element                }
-		else          { handle = this.element.find(handle)   }
-		if (!tracker) { tracker = handle                     }
-		else          { tracker = this.element.find(tracker) }
-		event.interaction.start(
-			{ name: 'resize', edges },
-			interact(tracker[0]),
-			tracker[0]
-		);
-		return new Promise((resolve) => {
-			interact(tracker[0]).on('resizeend', function onResizeEnd() {
-				interact(tracker[0]).off('resizeend', onResizeEnd);
-				resolve(this);
-			}.bind(this));
-		});
-	}
-
 
 	// private /////////////////////////////////////////////////////////////////////////////////////
 

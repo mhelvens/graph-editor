@@ -45,6 +45,19 @@ svg.dragging rect.layerTemplate {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+.grabbing {
+	cursor: grabbing;
+	cursor: -moz-grabbing;
+	cursor: -webkit-grabbing;
+}
+.grab {
+	cursor: grab;
+	cursor: -moz-grab;
+	cursor: -webkit-grab;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 div.inner-panel {
 	border: solid 1px black;
 	border-radius: 3px;

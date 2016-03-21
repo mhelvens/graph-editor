@@ -19,7 +19,7 @@ import LayerBorderLine    from '../canvas/LayerBorderLine.es6.js';
 @Component({
     selector: 'lyph-canvas',
 	inputs: ['activeTool'],
-	events: ['added'],
+	events: ['resetTool'],
     template: `
 
 		<svg id="svg-canvas">
@@ -49,7 +49,9 @@ import LayerBorderLine    from '../canvas/LayerBorderLine.es6.js';
 })
 export default class LyphCanvasComponent extends SvgContainerEntity {
 
-	added = new EventEmitter;
+	resetTool = new EventEmitter;
+
+	@property({initial: null }) activeTool;
 
 	@property({initial: false}) draggingSomething; // TODO: make this hierarchical; a property of SvgContainerEntity
 	@property({initial: false}) resizingSomething;
@@ -62,6 +64,13 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 			parent: null
 		});
 		Object.assign(this, { nativeElement, changeDetectorRef });
+		this.p('activeTool').value(null).onValue(() => { this.resetTool.next() });
+		this.p('activeTool').plug(
+			$('body').asKefirStream('keyup').which(27)
+			         .filterBy(this.p('draggingSomething').map(b=>!b))
+			         .filterBy(this.p('resizingSomething').map(b=>!b))
+			         .map(()=>null)
+		);
 	}
 
 	createElement() {
@@ -91,15 +100,14 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 
 			if (!this.activeTool) { return }
 
-			let mouseCoords = this.pageToCanvas({ x: event.pageX, y: event.pageY });
+			let mouseCoords = { x: event.clientX, y: event.clientY };
 
-			this.activeTool.result = await sw(this.activeTool.form)({
-				'box':     ()=> this.deployTool_LyphTemplateBox(event, mouseCoords),
-				'node':    ()=> this.deployTool_NodeCircle     (event, mouseCoords),
-				'process': ()=> this.deployTool_ProcessLine    (event, mouseCoords)
+			sw(this.activeTool.form)({
+				'box':             ()=> this.deployTool_LyphTemplateBox(event, mouseCoords),
+				'node':            ()=> this.deployTool_NodeCircle     (event, mouseCoords),
+				'process':         ()=> this.deployTool_ProcessLine    (event, mouseCoords),
+				'conveyedProcess': ()=> this.deployTool_ProcessLine    (event, mouseCoords)
 			});
-
-			this.added.next(this.activeTool);
 
 		});
 	}
@@ -142,16 +150,16 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 		return node.startDraggingBy(event);
 	};
 	
-	deployTool_ProcessLine(event, {x, y}) {
+	async deployTool_ProcessLine(event, {source = this._lastNodeTarget, target, x, y}) {
 		let process = new ProcessLine({
 			parent: this,
-			model : this.activeTool.model, // TODO: real process models
-			source: new NodeCircle({
+			model : this.activeTool.model,
+			source: source || new NodeCircle({
 				parent: this,
 				model : { id: -1, name: 'test source node' }, // TODO: real node models
 				x, y
 			}),
-			target: new NodeCircle({
+			target: target || new NodeCircle({
 				parent: this,
 				model : { id: -1, name: 'test target node' }, // TODO: real node models
 				x, y
@@ -160,7 +168,26 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 		this.appendChildElement(process.source);
 		this.appendChildElement(process.target);
 		this.appendChildElement(process);
-		return process.target.startDraggingBy(event);
+
+		let result = await process.target.startDraggingBy(event);
+		switch (result.status) {
+			case 'finished': {
+				this._lastNodeTarget = process.target;
+				this.p('activeTool').value(null).take(1).onValue(() => {
+					delete this._lastNodeTarget;
+				});
+			} break;
+			case 'aborted': {
+				let {source: s, target: t} = process;
+				process.delete();
+				if (!source) { s.delete() }
+				if (!target) { t.delete() }
+				this.activeTool = null;
+			} break;
+		}
+
+
+
 	};
 
 	deployTool_LyphTemplateBox(event, {x, y}) {

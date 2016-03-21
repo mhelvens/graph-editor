@@ -1,5 +1,8 @@
 import {abstract} from 'core-decorators';
 import pick       from 'lodash/pick';
+import interact   from '../libs/interact.js';
+import Kefir      from '../libs/kefir.es6.js';
+import $          from '../libs/jquery.es6.js';
 
 import {assert} from '../util/misc.es6.js';
 
@@ -85,6 +88,49 @@ const deleted       = Symbol('deleted');
 			});
 		}
 		return this[deleteClicker];
+	}
+
+	startDraggingBy(event) {
+		let {handle, tracker} = this.draggable();
+		if (!handle)  { handle = this.element                }
+		else          { handle = this.element.find(handle)   }
+		if (!tracker) { tracker = handle                     }
+		else          { tracker = this.element.find(tracker) }
+
+		let interactable = interact(tracker[0]);
+
+		interactable.rectChecker(element => element.getBoundingClientRect());
+		event.interaction.start(
+			{ name: 'drag' },
+			interactable,
+			tracker[0]
+		);
+
+		return new Promise((resolve) => {
+			Kefir.merge([
+				Kefir.fromEvents(interactable, 'dragend') .map(()=>({ status: 'finished' })),
+				$('body').asKefirStream('keyup').which(27).map(()=>({ status: 'aborted'  }))
+			]).take(1).onValue(resolve);
+		});
+	}
+
+	startResizingBy(event, edges = { bottom: true, right: true }) {
+		let {handle, tracker} = this.resizable();
+		if (!handle)  { handle = this.element                }
+		else          { handle = this.element.find(handle)   }
+		if (!tracker) { tracker = handle                     }
+		else          { tracker = this.element.find(tracker) }
+		event.interaction.start(
+			{ name: 'resize', edges },
+			interact(tracker[0]),
+			tracker[0]
+		);
+		return new Promise((resolve) => {
+			interact(tracker[0]).on('resizeend', function onResizeEnd() {
+				interact(tracker[0]).off('resizeend', onResizeEnd);
+				resolve(this);
+			}.bind(this));
+		});
 	}
 
 	// to override

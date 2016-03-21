@@ -84,26 +84,23 @@ export default class NodeCircle extends SvgDimensionedEntity {
 
 			if (!this.root.activeTool) { return }
 
-			event.stopPropagation();
-
-			let mouseCoords = this.pageToCanvas({ x: event.pageX, y: event.pageY});
-
-			this.root.activeTool.result = await sw(this.root.activeTool.form)({
-				'process': ()=> this.deployTool_ProcessLine(event, mouseCoords)
-				// 'canonical-tree-line': ()=> this.deployTool_CanonicalTree  (event, mouseCoords)
-			});
-
-			this.root.added.next(this.activeTool);
+			switch (this.root.activeTool.form) {
+				case 'process': {
+					event.stopPropagation();
+					this.root.deployTool_ProcessLine(event, {
+						x: event.pageX,
+						y: event.pageY,
+						source: this
+					})
+				} break;
+			}
 
 		});
-		this.p('hovering').onValue(() => {
-			if (this.root.activeTool) {
-				shape.css('cursor', 'pointer');
-			} else {
-				shape.css('cursor', 'grab');
-				shape.css('cursor', 'grabbing');
-				shape.css('cursor', 'hand');
-			}
+		Kefir.combine([this.p('dragging'), this.root.p('activeTool')]).onValue(([dragging, activeTool]) => {
+			let drawingProcess = activeTool && activeTool.form === 'process';
+			shape.toggleClass('pointer',   drawingProcess             );
+			shape.toggleClass('grab',     !drawingProcess && !dragging);
+			shape.toggleClass('grabbing', !drawingProcess &&  dragging);
 		});
 
 		return result;
@@ -120,8 +117,8 @@ export default class NodeCircle extends SvgDimensionedEntity {
 				x, y
 			})
 		});
-		this.root.element.find('.svg-nodes').append(process.target.element);
-		this.root.element.find('.svg-process-edges').append(process.element);
+		this.parent.appendChildElement(process.target);
+		this.root.appendChildElement(process);
 		return process.target.startDraggingBy(event);
 	};
 

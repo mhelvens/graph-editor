@@ -4,6 +4,7 @@ import {Component, EventEmitter} from '../../node_modules/angular2/core';
 const RECTANGLE_ICON = require('../img/draw-rectangle.png');
 const LINE_ICON      = require('../img/draw-line.png');
 const NODE_ICON      = require('../img/draw-node.png');
+const GRAB_ICON      = require('../img/grab.png');
 
 
 @Component({
@@ -14,17 +15,24 @@ const NODE_ICON      = require('../img/draw-node.png');
 
 		<div class="list-group" style="margin: 0">
 
-			<div class="list-group-item resource-view" (click)=" activeToolChange.next({form:'node'}) ">
-				<div class="text-content" style="text-align: left">Node</div>
+			<div class="list-group-item resource-view" [class.active]=" toolSelected(null, activeTool) " (click)=" activeToolChange.next(null) ">
+				<div class="text-content" style="text-align: left">Manipulation Mode</div>
 				<div class="buttons">
-					<div class="button node" [class.active]=" toolSelected('node', activeTool) " (click)=" activeToolChange.next({form:'node'}) "></div>
+					<div class="button manipulation" (click)=" activeToolChange.next(null) "></div>
 				</div>
 	        </div>
+	        
+			<!--<div class="list-group-item resource-view" [class.active]=" toolSelected('node', activeTool) " (click)=" activeToolChange.next({form:'node'}) ">-->
+				<!--<div class="text-content" style="text-align: left">Node</div>-->
+				<!--<div class="buttons">-->
+					<!--<div class="button node" (click)=" activeToolChange.next({form:'node'}) "></div>-->
+				<!--</div>-->
+	        <!--</div>-->
 
 			<!--<div class="list-group-item resource-view" [class.active]=" toolSelected('process', activeTool) ">
 				<div class="text-content" style="text-align: left">Process</div>
 				<div class="buttons">
-					<div class="button line" [class.active]=" toolSelected('process', activeTool) " (click)=" activeToolChange.next({form:'process'}) "></div>
+					<div class="button line" (click)=" activeToolChange.next({form:'process'}) "></div>
 				</div>
 	        </div>-->
 
@@ -69,15 +77,16 @@ const NODE_ICON      = require('../img/draw-node.png');
 			border-color: gray   !important;
 		}
 
-		.button.active {
+		.resource-view.active .button {
 			border-style:     solid !important;
 			border-color:     black !important;
 			background-color: white !important;
 		}
 
-		.button.box  { background-image: url(${RECTANGLE_ICON}) }
-		.button.line { background-image: url(${LINE_ICON})      }
-		.button.node { background-image: url(${NODE_ICON})      }
+		.button.box          { background-image: url(${RECTANGLE_ICON}) }
+		.button.line         { background-image: url(${LINE_ICON})      }
+		.button.node         { background-image: url(${NODE_ICON})      }
+		.button.manipulation { background-image: url(${GRAB_ICON})      }
 
 		.buttons > .button:not(:first-child) {
 			margin-top: 5px;

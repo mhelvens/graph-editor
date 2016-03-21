@@ -12,10 +12,12 @@
       <w>darkred</w>
       <w>defs</w>
       <w>deps</w>
+      <w>dragend</w>
       <w>dropzone</w>
       <w>interactable</w>
       <w>jsviews</w>
       <w>kefir</w>
+      <w>keyup</w>
       <w>lbottom</w>
       <w>lheight</w>
       <w>lorientation</w>

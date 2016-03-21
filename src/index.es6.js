@@ -73,7 +73,7 @@ import './index.scss';
 					<process-type-button-list   [(activeTool)]=" activeTool "></process-type-button-list>
 					<lyph-template-button-list  [(activeTool)]=" activeTool "></lyph-template-button-list>
 					<canonical-tree-button-list [(activeTool)]=" activeTool "></canonical-tree-button-list>
-					<lyph-canvas [activeTool]=" activeTool " (added)=" onArtefactAdded() "></lyph-canvas>
+					<lyph-canvas [activeTool]=" activeTool " (resetTool)=" onResetTool() "></lyph-canvas>
 					
 				`
 			})
@@ -81,7 +81,7 @@ import './index.scss';
 
 				activeTool = null;
 
-				onArtefactAdded() {
+				onResetTool() {
 					this.activeTool = null;
 				}
 
