@@ -23,9 +23,9 @@ const LINE_ICON      = require('../img/draw-line.png');
 		<div class="text-content" [innerHtml]="(model.name + ' ('+model.id+')') | escapeHTML | underlineSubstring:highlight"></div>
 
 		<div class="buttons">
-			<div class="button box "    [class.active]="toolSelected('box',     activeTool)" (click)=" setTool('box'    ) "></div>
-			<div class="button process" *ngIf="!(toolSelected('process', 'any', activeTool) || toolSelected('conveyedProcess', 'any', activeTool))"></div>
-			<div class="button conveyedProcess" *ngIf="toolSelected('process', 'any', activeTool) || toolSelected('conveyedProcess', 'any', activeTool)" [class.active]="toolSelected('conveyedProcess', activeTool)" (click)="setTool('conveyedProcess')">
+			<div class="button box " [class.active]="toolSelected('box', activeTool)" (click)=" setTool('box') "></div>
+			<div class="button process" *ngIf="model.layers.length > 0 && !(toolSelected('process', 'any', activeTool) || toolSelected('conveyedProcess', 'any', activeTool))"></div>
+			<div class="button conveyedProcess" *ngIf="model.layers.length > 0 && toolSelected('process', 'any', activeTool) || toolSelected('conveyedProcess', 'any', activeTool)" [class.active]="toolSelected('conveyedProcess', activeTool)" (click)="setTool('conveyedProcess')">
 				<svg style="width: 32px; height: 32px">
 					<line x1="5" y1="27" x2="27" y2="5" style="stroke-width: 3px" [style.stroke]="activeTool.model.color"></line>
 					<circle r="3.5" cx="5" cy="27" style="stroke: black; fill: white;"></circle>
@@ -75,8 +75,13 @@ const LINE_ICON      = require('../img/draw-line.png');
 			background-color: white !important;
 		}
 
-		.button.box     { background-image: url(${RECTANGLE_ICON}) }
-		.button.process { background-image: url(${LINE_ICON})      }
+		.button.box {
+			background-image: url(${RECTANGLE_ICON});
+		}
+		.button.process {
+			background-image: url(${LINE_ICON});
+			background-size: 50%;
+		}
 
 		.buttons > .button:not(:first-child) {
 			margin-top: 5px;

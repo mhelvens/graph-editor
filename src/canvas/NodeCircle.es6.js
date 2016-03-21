@@ -122,22 +122,6 @@ export default class NodeCircle extends SvgDimensionedEntity {
 		return process.target.startDraggingBy(event);
 	};
 
-	// deployTool_CanonicalTree(event, {x, y}) {
-	// 	let process = new CanonicalTreeLine({
-	// 		parent: this.root,
-	// 		model : { id: -1, name: 'test canonical tree' }, // TODO: real process models
-	// 		source: this,
-	// 		target: new NodeCircle({
-	// 			parent: this.parent,
-	// 			model : { id: -1, name: 'test target node' }, // TODO: real node models
-	// 			x, y
-	// 		})
-	// 	});
-	// 	this.root.element.find('.svg-nodes').append(process.target.element);
-	// 	this.root.element.find('.svg-process-edges').append(process.element);
-	// 	return process.target.startDraggingBy(event);
-	// };
-
 	draggable() {
 		let raw;
 		return {
@@ -155,7 +139,7 @@ export default class NodeCircle extends SvgDimensionedEntity {
 				raw  = pick(this, 'x', 'y');
 
 			},
-			onmove: ({dx, dy}) => {
+			onmove: ({interaction, dx, dy}) => {
 
 				/* update raw coordinates */
 				raw.x += dx;
@@ -182,6 +166,13 @@ export default class NodeCircle extends SvgDimensionedEntity {
 				/* restriction correction */
 				visible.x = clamp( this.root.cx, this.root.cx + this.root.cwidth  )( visible.x );
 				visible.y = clamp( this.root.cy, this.root.cy + this.root.cheight )( visible.y );
+
+				/* correction for forced axis alignment */
+				if (interaction.forceAxisAlignment) {
+					let faa = interaction.forceAxisAlignment;
+					let dim = abs(visible.x - faa.x) < abs(visible.y - faa.y) ? 'x' : 'y';
+					visible[dim] = faa[dim];
+				}
 
 				/* set visible (x, y) based on snapping and restriction */
 				this.set(visible);

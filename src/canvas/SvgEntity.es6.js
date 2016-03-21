@@ -90,7 +90,7 @@ const deleted       = Symbol('deleted');
 		return this[deleteClicker];
 	}
 
-	startDraggingBy(event) {
+	startDraggingBy(event, options = {}) {
 		let {handle, tracker} = this.draggable();
 		if (!handle)  { handle = this.element                }
 		else          { handle = this.element.find(handle)   }
@@ -98,6 +98,8 @@ const deleted       = Symbol('deleted');
 		else          { tracker = this.element.find(tracker) }
 
 		let interactable = interact(tracker[0]);
+
+		Object.assign(event.interaction, options);
 
 		interactable.rectChecker(element => element.getBoundingClientRect());
 		event.interaction.start(
