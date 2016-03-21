@@ -37,8 +37,7 @@ export default class LayerTemplateBox extends SvgContainerEntity {
 		this.p('width') .plug(this.p('thickness').filterBy(this.p('orientation').value('vertical')  ));
 		this.p('height').plug(this.p('thickness').filterBy(this.p('orientation').value('horizontal')));
 
-		/* create the layer template boxes*/
-
+		/* create the material boxes*/
 		this.materialBoxes = [];
 		this.materialBoxes = _(this.model.getMaterials()).map(lyph => {
 			if (this.hasAncestor(entity => entity.model === lyph)) {
@@ -56,28 +55,25 @@ export default class LayerTemplateBox extends SvgContainerEntity {
 			});
 		}).filter().value();
 
-
+		/* event binding to keep the material boxes properly positioned */
 		if (this.materialBoxes.length > 0) {
-			const margin = 0.02;
+			const margin = Fraction(1).div(50);
 			let widthPerBox  = Fraction(1 - margin).div(this.materialBoxes.length + 1);
 			let boxWidth     = widthPerBox.sub(margin);
 			let heightPerBox = Fraction(1 - margin).div(3);
 			let boxHeight    = heightPerBox.sub(margin);
-			console.log(widthPerBox.toString());
-			for (let [i, mb] of toPairs(this.materialBoxes)) {
-				i = parseInt(i);
-					// console.log(`${i}     * ${widthPerBox} = ${widthPerBox.mul(i)}`);
-					// console.log(`(${i}+1) * ${widthPerBox} = ${widthPerBox.mul(i+1)}`);
-				mb.p('lx')     .plug(this.p(['x', 'width'],  (x, width)  => Fraction(1).sub(widthPerBox.mul(i+1)) ));
-				mb.p('ly')     .plug(this.p(['y', 'height'], (y, height) => Fraction(1).sub(heightPerBox)         ));
-				mb.p('lwidth' ).plug(this.p(['width'],       (width)     => boxWidth                              ));
-				mb.p('lheight').plug(this.p(['height'],      (height)    => boxHeight                             ));
+			let lxywh = Kefir.combine([this.p('orientation'), this.p('x'), this.p('y'), this.p('width'), this.p('height')], (o, x, y, width, height) => sw(o)({
+				horizontal: { lx: i=>Fraction(1).sub(widthPerBox.mul(i+1)), ly: i=>Fraction(1).sub(heightPerBox),         lwidth: boxWidth,  lheight: boxHeight },
+				vertical:   { lx: i=>margin,                                ly: i=>Fraction(1).sub(widthPerBox.mul(i+1)), lwidth: boxHeight, lheight: boxWidth  }
+			}));
+
+			for (let [mb, i] of this.materialBoxes.map(Array.of)) {
+				mb.p('lx')     .plug(lxywh.map(({lx})=>lx(i) ));
+				mb.p('ly')     .plug(lxywh.map(({ly})=>ly(i) ));
+				mb.p('lwidth') .plug(lxywh.map(get('lwidth') ));
+				mb.p('lheight').plug(lxywh.map(get('lheight')));
 			}
 		}
-
-
-
-
 
 	}
 
@@ -192,11 +188,15 @@ export default class LayerTemplateBox extends SvgContainerEntity {
 		const layerText = layerTemplateBounds.children('text').css({
 			stroke:           'none',
 			fill:             this.model[backgroundColor].darken(2.5),
-			fontSize:         '14px',
+			fontSize:         `${this.interactive ? 14 : 9}px`,
 			pointerEvents:    'none',
 			dominantBaseline: 'text-before-edge'
 		});
 		const materialContainer = result.children('.material-container');
+		if (!this.interactive) {
+			layerTemplate.css({ strokeDasharray: '3,3' });
+		}
+
 
 		/* alter DOM based on observed changes */
 		layerTemplateBounds.attrPlug({

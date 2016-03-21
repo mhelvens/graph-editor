@@ -26,6 +26,8 @@ const deleted       = Symbol('deleted');
 		this.root.p('draggingSomething').plug(this.p('dragging'));
 		this.root.p('resizingSomething').plug(this.p('resizing'));
 
+		if (this.parent && this.parent.interactive === false) { this.interactive = false }
+
 		this.e('delete').onValue(() => {
 			for (let child of this.children) { child.delete() }
 			this.parent.children.delete(this);
@@ -37,14 +39,14 @@ const deleted       = Symbol('deleted');
 	}
 
 	setParent(newParent) {
-		/* check for nesting of model-sharing svg entities */
-		let entity = newParent;
-		while (entity) {
-			if (entity.model === this.model) {
-				throw new Error(`Nesting Error: Cannot set the parent of this entity to an entity that has a model that is a descendant of the model of this one.`);
-			}
-			entity = entity.parent;
-		}
+		// /* check for nesting of model-sharing svg entities */
+		// let entity = newParent;
+		// while (entity) {
+		// 	if (entity.model === this.model) {
+		// 		throw new Error(`Nesting Error: Cannot set the parent of this entity to an entity that has a model that is a descendant of the model of this one.`);
+		// 	}
+		// 	entity = entity.parent;
+		// }
 
 		/* actually set parent */
 		if (this.parent) { this.parent.children.delete(this) }
@@ -65,6 +67,12 @@ const deleted       = Symbol('deleted');
 		}
 		for (let child of this.children) {
 			child.traverse(types, fn);
+		}
+	}
+
+	moveToFront() {
+		for (let c = this; c !== c.root; c = c.parent) {
+			c.element.appendTo(c.element.parent());
 		}
 	}
 

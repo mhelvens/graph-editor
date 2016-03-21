@@ -54,12 +54,6 @@ import ValueTracker, {property} from './ValueTracker.es6.js';
 		return this.pageToCanvas(this.element.getBoundingClientRect());
 	}
 
-	moveToFront() {
-		for (let c = this; c !== c.root; c = c.parent) {
-			this.element.appendTo(this.element.parent());
-		}
-	}
-
 	startDraggingBy(event) {
 		let {handle, tracker} = this.draggable();
 		if (!handle)  { handle = this.element                }

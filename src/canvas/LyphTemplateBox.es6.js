@@ -56,6 +56,7 @@ export default class LyphTemplateBox extends SvgContainerEntity {
 					</svg>
 				</svg>
 				<g class="child-container"></g>
+				<g class="border-container"></g>
 				<g class="delete-clicker"></g>
 				<g class="rotate-clicker"></g>
 			</g>
@@ -89,11 +90,12 @@ export default class LyphTemplateBox extends SvgContainerEntity {
 		});
 		const axisText = textArea.children('text').css({
 			fill:             'white',
-			fontSize:         `${this.axisThickness-1}px`,
+			fontSize:         `${this.interactive ? 14 : 9}px`,
 			textRendering:    'geometricPrecision',
 			pointerEvents:    'none',
 			dominantBaseline: 'central'
 		});
+		const borderContainer = result.find('.border-container');
 		if (!this.interactive) {
 			result.css({ opacity: 0.6 });
 			lyphTemplate.css({ strokeDasharray: '3,3' });
@@ -166,7 +168,7 @@ export default class LyphTemplateBox extends SvgContainerEntity {
 					side  : 'outer',
 					model : { type: 'Border', id: -1 } // TODO: real border model
 				});
-				this.root.appendChildElement(border);
+				borderContainer.append(border.element);
 
 				interact(border.handle[0]).draggable({
 					onstart: (event) => {

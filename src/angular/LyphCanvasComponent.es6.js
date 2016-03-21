@@ -25,12 +25,8 @@ import LayerBorderLine    from '../canvas/LayerBorderLine.es6.js';
 		<svg id="svg-canvas">
 
 			<g class="svg-lyph-template-boxes"></g>
-			
-			<g class="svg-layer-borders"></g>
 
 			<g class="svg-process-edges"></g>
-
-			<g class="svg-nodes"></g>
 
 		</svg>
 
@@ -161,8 +157,9 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 				x, y
 			})
 		});
-		this.element.find('.svg-nodes').append(process.source.element).append(process.target.element);
-		this.element.find('.svg-process-edges').append(process.element);
+		this.appendChildElement(process.source);
+		this.appendChildElement(process.target);
+		this.appendChildElement(process);
 		return process.target.startDraggingBy(event);
 	};
 
@@ -172,7 +169,7 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 			model : this.activeTool.model,
 			x, y
 		});
-		this.element.find('.svg-lyph-template-boxes').append(lyphTemplateBox.element);
+		this.appendChildElement(lyphTemplateBox);
 		return lyphTemplateBox.startResizingBy(event);
 	};
 
@@ -180,14 +177,11 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 		if (newChild instanceof LyphTemplateBox) {
 			this.element.children('.svg-lyph-template-boxes').append(newChild.element);
 		}
-		if (newChild instanceof NodeCircle) {
-			this.element.children('.svg-nodes').append(newChild.element);
-		}
 		if (newChild instanceof ProcessLine) {
 			this.element.children('.svg-process-edges').append(newChild.element);
 		}
-		if (newChild instanceof LayerBorderLine) {
-			this.element.children('.svg-layer-borders').append(newChild.element);
+		if (newChild instanceof NodeCircle) {
+			this.element.children('.svg-process-edges').append(newChild.element);
 		}
 	}
 

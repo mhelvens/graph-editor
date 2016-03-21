@@ -1,27 +1,37 @@
 import pick     from 'lodash/pick';
-import isFinite from 'lodash/isFinite';
 import clamp    from 'lodash/fp/clamp';
 import clone    from 'lodash/fp/clone';
 import $        from '../libs/jquery.es6.js';
 import interact from '../libs/interact.js';
 import Kefir    from '../libs/kefir.es6.js';
+import Fraction, {isNumber} from '../libs/fraction.es6.js';
 
+import {property} from './ValueTracker.es6.js';
 import {abs, sw} from '../util/misc.es6.js';
 
-import SvgPositionedEntity        from './SvgPositionedEntity.es6.js';
+import SvgDimensionedEntity        from './SvgDimensionedEntity.es6.js';
 import LayerTemplateBox from './LayerTemplateBox.es6.js';
 import ProcessLine      from './ProcessLine.es6.js';
 
 
-export default class NodeCircle extends SvgPositionedEntity {
+export default class NodeCircle extends SvgDimensionedEntity {
 
 	static IDLE_RADIUS     = 10;
 	static DRAGGING_RADIUS = 16;
 	static SNAP_DISTANCE   = 20;
 
+	@property({isValid: isNumber}) r;
+
 	constructor(options) {
 		super(options);
 		Object.assign(this, pick(options, 'x', 'y'));
+
+		this.width = this.height = 0;
+
+		this.p('r').plug(this.p('dragging').map((dragging) => dragging
+			? NodeCircle.DRAGGING_RADIUS
+			: NodeCircle.IDLE_RADIUS
+		));
 	}
 
 	createElement() {
@@ -51,10 +61,7 @@ export default class NodeCircle extends SvgPositionedEntity {
 		shape.attrPlug({
 			cx: this.p('x'),
 			cy: this.p('y'),
-			r: this.p('dragging').map((dragging) => dragging
-				? NodeCircle.DRAGGING_RADIUS
-				: NodeCircle.IDLE_RADIUS
-			)
+			r:  this.p('r')
 		});
 
 		/* delete button */
@@ -105,7 +112,7 @@ export default class NodeCircle extends SvgPositionedEntity {
 	deployTool_ProcessLine(event, {x, y}) {
 		let process = new ProcessLine({
 			parent: this.root,
-			model : { id: -1, name: 'test process' }, // TODO: real process models
+			model : this.root.activeTool.model, // TODO: real process models
 			source: this,
 			target: new NodeCircle({
 				parent: this.parent,
@@ -135,7 +142,7 @@ export default class NodeCircle extends SvgPositionedEntity {
 	// };
 
 	draggable() {
-		let raw, parentRect;
+		let raw;
 		return {
 			handle:  'circle.node.shape',
 			// tracker: '.node.center',
@@ -148,8 +155,7 @@ export default class NodeCircle extends SvgPositionedEntity {
 				this.moveToFront();
 
 				/* initialize interaction-local variables */
-				raw        = pick(this, 'x', 'y');
-				parentRect = this.parent.boundingBox();
+				raw  = pick(this, 'x', 'y');
 
 			},
 			onmove: ({dx, dy}) => {
@@ -177,8 +183,8 @@ export default class NodeCircle extends SvgPositionedEntity {
 				if (abs(snap.y) <  abs(snap.x) && abs(snap.y) <= NodeCircle.SNAP_DISTANCE) { visible.y += snap.y }
 
 				/* restriction correction */
-				visible.x = clamp( parentRect.left, parentRect.left + parentRect.width  )( visible.x );
-				visible.y = clamp( parentRect.top,  parentRect.top  + parentRect.height )( visible.y );
+				visible.x = clamp( this.root.cx, this.root.cx + this.root.cwidth  )( visible.x );
+				visible.y = clamp( this.root.cy, this.root.cy + this.root.cheight )( visible.y );
 
 				/* set visible (x, y) based on snapping and restriction */
 				this.set(visible);
