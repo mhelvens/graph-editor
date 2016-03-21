@@ -103,10 +103,11 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 			let mouseCoords = { x: event.clientX, y: event.clientY };
 
 			sw(this.activeTool.form)({
-				'box':             ()=> this.deployTool_LyphTemplateBox(event, mouseCoords),
-				// 'node':            ()=> this.deployTool_NodeCircle     (event, mouseCoords),
-				'process':         ()=> this.deployTool_ProcessLine    (event, mouseCoords),
-				'conveyedProcess': ()=> this.deployTool_ProcessLine    (event, mouseCoords)
+				'box':                  ()=> this.deployTool_LyphTemplateBox(event, mouseCoords),
+				// 'node':                 ()=> this.deployTool_NodeCircle     (event, mouseCoords),
+				'process':              ()=> this.deployTool_ProcessLine    (event, mouseCoords),
+				'conveyedProcess':      ()=> this.deployTool_ProcessLine    (event, mouseCoords),
+				'canonicalTreeProcess': ()=> this.deployTool_ProcessLine    (event, mouseCoords)
 			});
 
 		});
@@ -150,7 +151,7 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 	// 	return node.startDraggingBy(event);
 	// };
 	
-	async deployTool_ProcessLine(event, {source = this._lastNodeTarget, target, x, y}) {
+	async deployTool_ProcessLine(event, {level = this._nextLevel, source = this._lastNodeTarget, target, x, y}) {
 		let process = new ProcessLine({
 			parent: this,
 			model : this.activeTool.model,
@@ -169,10 +170,14 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 		this.appendChildElement(process.target);
 		this.appendChildElement(process);
 
-
+		if (this.activeTool.form === 'canonicalTreeProcess') {
+			console.log('_nextLevel:', this._nextLevel);
+			this._nextLevel = level || 1;
+			this.activeTool.lyphTemplate = this.activeTool.canonicalTree.getLevels()[this._nextLevel].getLyphTemplate();
+		}
 
 		let lyphTemplateBox = null;
-		if (this.activeTool.form === 'conveyedProcess') {
+		if (this.activeTool.form === 'conveyedProcess' || this.activeTool.form === 'canonicalTreeProcess') {
 
 			const RADIUS  = 100;
 
@@ -226,14 +231,19 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 
 
 		let result = await process.target.startDraggingBy(event, {
-			forceAxisAlignment: (this.activeTool.form === 'conveyedProcess') ? pick(process.source, 'x', 'y') : null
+			forceAxisAlignment: (this.activeTool.form === 'conveyedProcess' || this.activeTool.form === 'canonicalTreeProcess') ? pick(process.source, 'x', 'y') : null
 		});
 		switch (result.status) {
 			case 'finished': {
+				this._nextLevel += 1;
 				this._lastNodeTarget = process.target;
 				this.p('activeTool').value(null).take(1).onValue(() => {
 					delete this._lastNodeTarget;
+					delete this._nextLevel;
 				});
+				if (this.activeTool.form === 'canonicalTreeProcess' && this._nextLevel >= this.activeTool.canonicalTree.levels.length) {
+					this.activeTool = null;
+				}
 			} break;
 			case 'aborted': {
 				let {source: s, target: t} = process;

@@ -38,6 +38,10 @@ export default class Resources {
 			// 	this[modelLists][type] = require('../../lyphtemplates.json');
 			// }
 
+
+			console.log(type, this[modelLists][type]); // TODO: remove
+
+
 			this[models][type] = {};
 			for (let model of this[modelLists][type]) {
 				this[models][type][model.id] = model;
@@ -70,13 +74,16 @@ export default class Resources {
 	}
 
 	async preloadAllResources() {
+		await this[fetchResources]('canonicalTrees');
+		await this[fetchResources]('canonicalTreeLevel');
 		await this[fetchResources]('layerTemplates');
 		let layerTemplates = this.getAllResources_sync().layerTemplates;
+		let treeLevels = this.getAllResources_sync().canonicalTreeLevel;
 		await this[fetchSpecificResources]('lyphTemplates', uniq([
 			...        layerTemplates.map(get('lyphTemplate')),
-			...flatten(layerTemplates.map(get('materials'   )))
+			...flatten(layerTemplates.map(get('materials'   ))),
+			...            treeLevels.map(get('template'))
 		]));
-		await this[fetchResources]('canonicalTrees');
 		await this[fetchResources]('processTypes');
 	}
 

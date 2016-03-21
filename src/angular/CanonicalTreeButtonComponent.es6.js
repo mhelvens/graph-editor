@@ -22,7 +22,14 @@ const LINE_ICON = require('../img/draw-line.png');
 		<div class="text-content" [innerHtml]="(model.name + ' ('+model.id+')') | escapeHTML | underlineSubstring:highlight"></div>
 
 		<div class="buttons">
-			<div class="button line" [class.active]=" toolSelected('canonical-tree-line', activeTool) " (click)=" setTool('canonical-tree-line') "></div>
+			<div class="button process" *ngIf="canDrawAsProcess() && !(toolSelected('process', 'any', activeTool) || toolSelected('canonicalTreeProcess', 'any', activeTool))"></div>
+			<div class="button canonicalTreeProcess" *ngIf="canDrawAsProcess() && toolSelected('process', 'any', activeTool) || toolSelected('canonicalTreeProcess', 'any', activeTool)" [class.active]="toolSelected('canonicalTreeProcess', activeTool)" (click)="setTool('canonicalTreeProcess')">
+				<svg style="width: 32px; height: 32px">
+					<line x1="5" y1="27" x2="27" y2="5" style="stroke-width: 3px" [style.stroke]="activeTool.model.color"></line>
+					<circle r="3.5" cx="5" cy="27" style="stroke: black; fill: white;"></circle>
+					<circle r="3.5" cx="27" cy="5" style="stroke: black; fill: white;"></circle>
+				</svg>
+			</div>
 		</div>
 
 	`,
@@ -66,7 +73,10 @@ const LINE_ICON = require('../img/draw-line.png');
 			background-color: white !important;
 		}
 
-		.button.line { background-image: url(${LINE_ICON})      }
+		.button.process {
+			background-image: url(${LINE_ICON});
+			background-size: 50%;
+		}
 
 		.buttons > .button:not(:first-child) {
 			margin-top: 5px;
@@ -82,16 +92,24 @@ export default class CanonicalTreeButtonComponent {
 	activeTool;
 	activeToolChange = new EventEmitter;
 
-	toolSelected(form) {
-		return  this.activeTool                      &&
-		        this.activeTool.model === this.model &&
-		       (this.activeTool.form  === form || form === '*');
+	canDrawAsProcess() {
+		return this.model.levels.length > 0 && this.model.getLevels().every(level => level.getLyphTemplate().getLayerTemplates().length > 0);
+	}
+
+	toolSelected(form, any) {
+		if (!this.activeTool)              { return false }
+		if (this.activeTool.form !== form) { return false }
+		if (form === 'canonicalTreeModel') {
+			return any === 'any' || this.activeTool.canonicalTree === this.model;
+		}
+		return true;
 	}
 
 	setTool(form) {
 		this.activeToolChange.next({
-			model: this.model,
-			form:  form
+			canonicalTree: this.model,
+			model:         this.activeTool.model,
+			form:          form
 		});
 	}
 

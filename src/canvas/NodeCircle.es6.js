@@ -152,12 +152,12 @@ export default class NodeCircle extends SvgDimensionedEntity {
 				let snap = { x: Infinity, y: Infinity };
 				this.root.traverse(LayerTemplateBox, (layer) => {
 					if (layer.y < raw.y && raw.y < layer.y + layer.height) {
-						if (abs(layer.x                - raw.x) < abs(snap.x)) { snap.x = layer.x                - raw.x + 0.5 }
-						if (abs(layer.x + layer.width  - raw.x) < abs(snap.x)) { snap.x = layer.x + layer.width  - raw.x - 0.5 }
+						if (abs(layer.x                - raw.x) < abs(snap.x)) { snap.x = layer.x                - raw.x + 4 }
+						if (abs(layer.x + layer.width  - raw.x) < abs(snap.x)) { snap.x = layer.x + layer.width  - raw.x - 4 }
 					}
 					if (layer.x < raw.x && raw.x < layer.x + layer.width) {
-						if (abs(layer.y                - raw.y) < abs(snap.y)) { snap.y = layer.y                - raw.y + 0.5 }
-						if (abs(layer.y + layer.height - raw.y) < abs(snap.y)) { snap.y = layer.y + layer.height - raw.y - 0.5 }
+						if (abs(layer.y                - raw.y) < abs(snap.y)) { snap.y = layer.y                - raw.y + 4 }
+						if (abs(layer.y + layer.height - raw.y) < abs(snap.y)) { snap.y = layer.y + layer.height - raw.y - 4 }
 					}
 				});
 				if (abs(snap.x) <= abs(snap.y) && abs(snap.x) <= NodeCircle.SNAP_DISTANCE) { visible.x += snap.x }
