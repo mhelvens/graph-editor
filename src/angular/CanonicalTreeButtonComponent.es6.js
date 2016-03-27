@@ -12,9 +12,9 @@ const LINE_ICON = require('../img/draw-line.png');
 	inputs: ['model', 'highlight', 'activeTool'],
 	events: ['activeToolChange'],
 	host: {
-		'[class.resource-view]': ` true                          `,
-		'[title]':               ` model.name                    `,
-		'[class.active]':        ` toolSelected('*', activeTool) `
+		'[class.resource-view]': ` true                                                    `,
+		'[title]':               ` model.name                                              `,
+		'[class.active]':        ` toolSelected('canonicalTreeProcess', 'any', activeTool) `
 	},
 	template: `
 
@@ -23,11 +23,11 @@ const LINE_ICON = require('../img/draw-line.png');
 
 		<div class="buttons">
 			<div class="button process" *ngIf="canDrawAsProcess() && !(toolSelected('process', 'any', activeTool) || toolSelected('canonicalTreeProcess', 'any', activeTool))"></div>
-			<div class="button canonicalTreeProcess" *ngIf="canDrawAsProcess() && toolSelected('process', 'any', activeTool) || toolSelected('canonicalTreeProcess', 'any', activeTool)" [class.active]="toolSelected('canonicalTreeProcess', activeTool)" (click)="setTool('canonicalTreeProcess')">
+			<div class="button canonicalTreeProcess" *ngIf="canDrawAsProcess() && ( toolSelected('process', 'any', activeTool) || toolSelected('canonicalTreeProcess', 'any', activeTool) )" [class.active]="toolSelected('canonicalTreeProcess', 'this', activeTool)" (click)="setTool('canonicalTreeProcess')">
 				<svg style="width: 32px; height: 32px">
 					<line x1="5" y1="27" x2="27" y2="5" style="stroke-width: 3px" [style.stroke]="activeTool.model.color"></line>
-					<circle r="3.5" cx="5" cy="27" style="stroke: black; fill: white;"></circle>
-					<circle r="3.5" cx="27" cy="5" style="stroke: black; fill: white;"></circle>
+					<circle r="3.5" cx="5"  cy="27" style="stroke: black; fill: white;"></circle>
+					<circle r="3.5" cx="27" cy="5"  style="stroke: black; fill: white;"></circle>
 				</svg>
 			</div>
 		</div>
@@ -54,6 +54,7 @@ const LINE_ICON = require('../img/draw-line.png');
 
 		.buttons > .button {
 			cursor: pointer;
+			border-style: solid;
 			border-width: 1px;
 			border-color: transparent;
 			width:  34px !important;
@@ -75,7 +76,7 @@ const LINE_ICON = require('../img/draw-line.png');
 
 		.button.process {
 			background-image: url(${LINE_ICON});
-			background-size: 50%;
+			background-size: 17px;
 		}
 
 		.buttons > .button:not(:first-child) {
@@ -99,10 +100,10 @@ export default class CanonicalTreeButtonComponent {
 	toolSelected(form, any) {
 		if (!this.activeTool)              { return false }
 		if (this.activeTool.form !== form) { return false }
-		if (form === 'canonicalTreeModel') {
-			return any === 'any' || this.activeTool.canonicalTree === this.model;
+		if (any === 'any')                 { return true  }
+		if (form === 'canonicalTreeProcess') {
+			return this.activeTool.canonicalTree === this.model;
 		}
-		return true;
 	}
 
 	setTool(form) {

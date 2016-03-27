@@ -42,8 +42,8 @@ const LINE_ICON      = require('../img/draw-line.png');
 			color: black !important;
 		}
 
-		:host        { background-color: #fee !important }
-		:host:hover  { background-color: #fcc !important }
+		:host        { background-color: #fee !important                      }
+		:host:hover  { background-color: #fcc !important                      }
 		:host.active { background-color: #fcc !important; font-style: italic; }
 
 		.text-content {
@@ -56,6 +56,7 @@ const LINE_ICON      = require('../img/draw-line.png');
 
 		.buttons > .button {
 			cursor: pointer;
+			border-style: solid;
 			border-width: 1px;
 			border-color: transparent;
 			width:  34px !important;
@@ -80,7 +81,7 @@ const LINE_ICON      = require('../img/draw-line.png');
 		}
 		.button.process {
 			background-image: url(${LINE_ICON});
-			background-size: 50%;
+			background-size: 17px;
 		}
 
 		.buttons > .button:not(:first-child) {
