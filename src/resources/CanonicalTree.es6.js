@@ -17,14 +17,10 @@ export default class CanonicalTree extends Resource {
 
 		let resourceFetcher = new ResourceFetcher;
 		this[levels] = _(resourceFetcher.getResource_sync('canonicalTreeLevel', this.levels)).sortBy('position').map((level) => {
-			console.log('---', level.template);
 			level._template = LyphTemplate.get_sync([level.template])[0];
 			level.getLyphTemplate = () => level._template;
 			return level;
 		}).value();
-
-		console.log(this[levels]);
-
 	}
 
 	getLevels() {
