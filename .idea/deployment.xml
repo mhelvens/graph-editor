@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData">
+    <serverData>
+      <paths name="Linode (graph editor)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/graph-editor" local="$PROJECT_DIR$" web="/michiel/graph-editor" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>
