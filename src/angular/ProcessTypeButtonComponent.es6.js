@@ -1,4 +1,5 @@
 import {Component, EventEmitter, Inject} from '../../node_modules/angular2/core';
+import ProcessTool from '../tools/ProcessTool.es6.js';
 
 @Component({
 	selector: 'process-type',
@@ -9,9 +10,9 @@ import {Component, EventEmitter, Inject} from '../../node_modules/angular2/core'
 	inputs: ['model', 'highlight', 'activeTool'],
 	events: ['activeToolChange'],
 	host: {
-		'[class.resource-view]': ` true                                        `,
-		'[title]':               ` model.name                                  `,
-		'[class.active]':        ` toolSelected(['box','process'], activeTool) `
+		'[class.resource-view]': ` true                                    `,
+		'[title]':               ` model.name                              `,
+		'[class.active]':        ` toolSelected('ProcessTool', activeTool) `
 	},
 	template: `
 
@@ -19,7 +20,7 @@ import {Component, EventEmitter, Inject} from '../../node_modules/angular2/core'
 		<div class="text-content" [innerHtml]="model.name | escapeHTML | underlineSubstring:highlight"></div>
 
 		<div class="buttons">
-			<div class="button line" [class.active]=" toolSelected('process', activeTool) " (click)=" setTool('process') ">
+			<div class="button line" [class.active]=" toolSelected('ProcessTool', activeTool) " (click)=" setTool() ">
 				<svg style="width: 32px; height: 32px">
 					<line x1="5" y1="27" x2="27" y2="5" style="stroke-width: 3px" [style.stroke]="model.color"></line>
 					<circle r="3.5" cx="5" cy="27" style="stroke: black; fill: white;"></circle>
@@ -86,17 +87,16 @@ export default class ProcessTypeButtonComponent {
 	activeTool;
 	activeToolChange = new EventEmitter;
 
-	toolSelected(form) {
-		return  this.activeTool                      &&
-		        this.activeTool.model === this.model &&
-		       (this.activeTool.form  === form || Array.isArray(form) && (this.activeTool.form === form[0] || this.activeTool.form === form[1]));
+	toolSelected(type) {
+		return  this.activeTool                            &&
+		        this.activeTool.processType === this.model &&
+		       (this.activeTool.type  === type || Array.isArray(type) && (this.activeTool.type === type[0] || this.activeTool.type === type[1]));
 	}
 
-	setTool(form) {
-		this.activeToolChange.next({
-			model: this.model,
-			form:  form
-		});
+	setTool() {
+		this.activeToolChange.next(new ProcessTool({
+			processType: this.model
+		}));
 	}
 
 }

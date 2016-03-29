@@ -6,6 +6,7 @@ import pick from 'lodash/pick';
 import toPairs from 'lodash/toPairs';
 import defer from 'lodash/defer';
 import Kefir from '../libs/kefir.es6.js';
+import interact from '../libs/interact.js';
 import Fraction, {isNumber, sum, equals} from '../libs/fraction.es6.js';
 
 import {property}          from './ValueTracker.es6.js';
@@ -197,7 +198,6 @@ export default class LayerTemplateBox extends SvgContainerEntity {
 			layerTemplate.css({ strokeDasharray: '3,3' });
 		}
 
-
 		/* alter DOM based on observed changes */
 		layerTemplateBounds.attrPlug({
 			x:      this.p('x'),
@@ -217,6 +217,15 @@ export default class LayerTemplateBox extends SvgContainerEntity {
 
 		/* put materials */
 		for (let mb of this.materialBoxes) { materialContainer.append(mb.element) }
+
+		/* using the current tool on mouse-down */
+		layerTemplate.cssPlug('pointer-events', this.root.p('activeTool').map(at => at?'all':'none').takeUntilBy(this.e('delete')));
+		interact(layerTemplate[0]).on('down', (event) => {
+			if (!this.root.activeTool) { return } // TODO: instead of this test, use the Null Object design pattern
+			event.preventDefault();
+			event.stopPropagation();
+			this.root.activeTool.onMouseDown(this, event);
+		});
 
 		return result;
 	}

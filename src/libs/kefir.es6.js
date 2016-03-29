@@ -56,19 +56,19 @@ Object.assign(Kefir, {
 
 /* Bus ************************************************************************************************************/
 
-const emit = Symbol('emit');
+// const emit = Symbol('emit');
 Kefir.Bus = class Bus extends Kefir.Pool {
 
-	constructor() {
-		super();
-		this.plug(Kefir.stream((emitter) => {
-			this[emit] = emitter.emit;
-			this.end = emitter.end;
-		}));
-	}
-
-	emit(value) {
-		this[emit](value);
+	constructor(...args) {
+		super(...args);
+		let baseEmitter = Kefir.stream((emitter) => {
+			this.emit = emitter.emit;
+			this.end  = emitter.end;
+			// debugger;
+		});
+		baseEmitter.run();
+		this.plug(baseEmitter);
+		// debugger;
 	}
 
 };

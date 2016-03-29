@@ -1,6 +1,11 @@
 import $ from 'jquery';
 export default $;
 
+/* powertip plugin */
+import '../../node_modules/jquery-powertip/dist/jquery.powertip.min.js';
+import '../../node_modules/jquery-powertip/dist/css/jquery.powertip.min.css';
+import '../../node_modules/jquery-powertip/dist/css/jquery.powertip-dark.min.css';
+
 /* convenience static methods */
 Object.assign($, {
 	svg(creationString) {

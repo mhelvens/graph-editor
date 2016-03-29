@@ -1,4 +1,6 @@
 import {Component, EventEmitter, Inject} from '../../node_modules/angular2/core';
+import LyphTemplateTool    from '../tools/LyphTemplateTool.es6.js';
+import ConveyedProcessTool from '../tools/ConveyedProcessTool.es6.js';
 
 const RECTANGLE_ICON = require('../img/draw-rectangle.png');
 const LINE_ICON      = require('../img/draw-line.png');
@@ -23,11 +25,11 @@ const LINE_ICON      = require('../img/draw-line.png');
 		<div class="text-content" [innerHtml]="(model.name + ' ('+model.id+')') | escapeHTML | underlineSubstring:highlight"></div>
 
 		<div class="buttons">
-			<div class="button box " [class.active]="toolSelected('box', activeTool)" (click)=" setTool('box') "></div>
-			<div class="button process" *ngIf="model.layers.length > 0 && !(toolSelected('process', 'any', activeTool) || toolSelected('conveyedProcess', 'any', activeTool))"></div>
-			<div class="button conveyedProcess" *ngIf="model.layers.length > 0 && toolSelected('process', 'any', activeTool) || toolSelected('conveyedProcess', 'any', activeTool)" [class.active]="toolSelected('conveyedProcess', activeTool)" (click)="setTool('conveyedProcess')">
+			<div class="button box " [class.active]="toolSelected('LyphTemplateTool', activeTool)" (click)=" setTool('LyphTemplateTool') "></div>
+			<div class="button process"         *ngIf="canDrawAsSomeProcess() && !canDrawAsCurrentProcess()"></div>
+			<div class="button conveyedProcess" *ngIf="canDrawAsCurrentProcess()" [class.active]="toolSelected('ConveyedProcessTool', activeTool)" (click)="setTool('ConveyedProcessTool')">
 				<svg style="width: 32px; height: 32px">
-					<line x1="5" y1="27" x2="27" y2="5" style="stroke-width: 3px" [style.stroke]="activeTool.model.color"></line>
+					<line x1="5" y1="27" x2="27" y2="5" style="stroke-width: 3px" [style.stroke]="activeTool.processType.color"></line>
 					<circle r="3.5" cx="5" cy="27" style="stroke: black; fill: white;"></circle>
 					<circle r="3.5" cx="27" cy="5" style="stroke: black; fill: white;"></circle>
 				</svg>
@@ -98,30 +100,39 @@ export default class LyphTemplateButtonComponent {
 
 	activeTool;
 	activeToolChange = new EventEmitter;
-
-	toolSelected(form, any) {
-		if (!this.activeTool)              { return false }
-		if (this.activeTool.form !== form) { return false }
-		if (form === 'box') {
-			return this.activeTool.model === this.model;
-		} else if (form === 'conveyedProcess') {
-			return any === 'any' || this.activeTool.lyphTemplate === this.model;
-		}
-		return true;
+	
+	canDrawAsSomeProcess() {
+		return ConveyedProcessTool.valid({
+			lyphTemplate: this.model
+		});
+	}
+	
+	canDrawAsCurrentProcess() {
+		return ConveyedProcessTool.valid({
+			lyphTemplate: this.model,
+			processType:  this.activeTool && (this.activeTool.processType || null)
+		});
 	}
 
-	setTool(form) {
-		if (form === 'box') {
-			this.activeToolChange.next({
-				model: this.model,
-				form:  form
-			});
-		} else if (form === 'conveyedProcess') {
-			this.activeToolChange.next({
-				lyphTemplate: this.model,
-				model:        this.activeTool.model,
-				form:         form
-			});
+	toolSelected(type) {
+		if (!this.activeTool)                              { return false }
+		if (this.activeTool.type !== type && type !== '*') { return false }
+		return this.activeTool.lyphTemplate === this.model;
+	}
+
+	setTool(type) {
+		switch (type) {
+			case 'LyphTemplateTool': {
+				this.activeToolChange.next(new LyphTemplateTool({
+					lyphTemplate: this.model
+				}));
+			} break;
+			case 'ConveyedProcessTool': {
+				this.activeToolChange.next(new ConveyedProcessTool({
+					lyphTemplate: this.model,
+					processType:  this.activeTool && this.activeTool.processType
+				}));
+			} break;
 		}
 	}
 

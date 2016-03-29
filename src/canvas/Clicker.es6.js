@@ -18,7 +18,7 @@ export default class Clicker extends SvgObject {
 		const r = Clicker.RADIUS;
 		let result = $.svg(`
 			<svg style="overflow: visible">
-				<circle cx="0" cy="0" r="${Clicker.RADIUS}"></circle>
+				<circle cx="0" cy="0" r="${r}"></circle>
 			</svg>
 		`);
 
@@ -33,7 +33,7 @@ export default class Clicker extends SvgObject {
 		this.p('hovering').plug(circle.asKefirStream('mouseleave').map(()=>false));
 
 		/* alter DOM based on observed changes */
-		circle.attrPlug('r', this.p('hovering').map((hovering) => Clicker.RADIUS + (hovering ? 1 : 0)));
+		circle.attrPlug('r', this.p('hovering').map((hovering) => r + (hovering ? 1 : 0)));
 
 		/* return result */
 		return result;

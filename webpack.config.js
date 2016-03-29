@@ -43,6 +43,7 @@ module.exports = {
 			
 			/* inject jQuery for libraries that need it */
 			{ test: /golden-layout$/,                        loader: 'imports?jQuery=jquery' },
+			{ test: /jquery-powertip$/,                      loader: 'imports?jQuery=jquery' },
 			{ test: /jquery\.balancetext\.js$/,              loader: 'imports?jQuery=jquery' },
 			{ test: /bootstrap-sass\/assets\/javascripts\//, loader: 'imports?jQuery=jquery' },
 

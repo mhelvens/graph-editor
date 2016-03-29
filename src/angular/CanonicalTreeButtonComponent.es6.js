@@ -1,7 +1,7 @@
 import {Component, EventEmitter} from '../../node_modules/angular2/core';
+import CanonicalTreeTool from '../tools/CanonicalTreeTool.es6.js';
 
 const LINE_ICON = require('../img/draw-line.png');
-
 
 @Component({
 	selector: 'canonical-tree',
@@ -14,7 +14,7 @@ const LINE_ICON = require('../img/draw-line.png');
 	host: {
 		'[class.resource-view]': ` true                                                    `,
 		'[title]':               ` model.name                                              `,
-		'[class.active]':        ` toolSelected('canonicalTreeProcess', 'any', activeTool) `
+		'[class.active]':        ` toolSelected('CanonicalTreeTool', activeTool) `
 	},
 	template: `
 
@@ -22,10 +22,10 @@ const LINE_ICON = require('../img/draw-line.png');
 		<div class="text-content" [innerHtml]="(model.name + ' ('+model.id+')') | escapeHTML | underlineSubstring:highlight"></div>
 
 		<div class="buttons">
-			<div class="button process" *ngIf="canDrawAsProcess() && !(toolSelected('process', 'any', activeTool) || toolSelected('canonicalTreeProcess', 'any', activeTool))"></div>
-			<div class="button canonicalTreeProcess" *ngIf="canDrawAsProcess() && ( toolSelected('process', 'any', activeTool) || toolSelected('canonicalTreeProcess', 'any', activeTool) )" [class.active]="toolSelected('canonicalTreeProcess', 'this', activeTool)" (click)="setTool('canonicalTreeProcess')">
+			<div class="button process" *ngIf="canDrawAsSomeProcess() && !canDrawAsCurrentProcess()"></div>
+			<div class="button" *ngIf="canDrawAsCurrentProcess()" [class.active]="toolSelected('CanonicalTreeTool', activeTool)" (click)="setTool()">
 				<svg style="width: 32px; height: 32px">
-					<line x1="5" y1="27" x2="27" y2="5" style="stroke-width: 3px" [style.stroke]="activeTool.model.color"></line>
+					<line x1="5" y1="27" x2="27" y2="5" style="stroke-width: 3px" [style.stroke]="activeTool.processType.color"></line>
 					<circle r="3.5" cx="5"  cy="27" style="stroke: black; fill: white;"></circle>
 					<circle r="3.5" cx="27" cy="5"  style="stroke: black; fill: white;"></circle>
 				</svg>
@@ -92,26 +92,33 @@ export default class CanonicalTreeButtonComponent {
 
 	activeTool;
 	activeToolChange = new EventEmitter;
-
-	canDrawAsProcess() {
-		return this.model.levels.length > 0 && this.model.getLevels().every(level => level.getLyphTemplate().getLayerTemplates().length > 0);
+	
+	canDrawAsSomeProcess() {
+		return CanonicalTreeTool.valid({
+			canonicalTree: this.model
+		});
 	}
 
-	toolSelected(form, any) {
+	canDrawAsCurrentProcess() {
+		return CanonicalTreeTool.valid({
+			canonicalTree: this.model,
+			processType:   this.activeTool && (this.activeTool.processType || null)
+		});
+	}
+
+	toolSelected(type) {
 		if (!this.activeTool)              { return false }
-		if (this.activeTool.form !== form) { return false }
-		if (any === 'any')                 { return true  }
-		if (form === 'canonicalTreeProcess') {
+		if (this.activeTool.type !== type) { return false }
+		if (type === 'CanonicalTreeTool') {
 			return this.activeTool.canonicalTree === this.model;
 		}
 	}
 
-	setTool(form) {
-		this.activeToolChange.next({
+	setTool() {
+		this.activeToolChange.next(new CanonicalTreeTool({
 			canonicalTree: this.model,
-			model:         this.activeTool.model,
-			form:          form
-		});
+			processType:   this.activeTool && this.activeTool.processType
+		}));
 	}
 
 }

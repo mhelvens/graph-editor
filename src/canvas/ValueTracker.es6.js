@@ -61,7 +61,7 @@ export default class ValueTracker {
 
 		/* define the event stream */
 		let bus = new Kefir.Bus();
-		// this.e('delete').onValue(bus.end);
+
 		this[events][name] = bus.takeUntilBy(this.e('delete'));
 		Object.assign(this[events][name], {
 
@@ -268,7 +268,5 @@ export const property = (options = {}) => (target, key) => {
 
 export const event = (options = {}) => (target, key) => {
 	set(target, ['constructor', events, key], options);
-	return {
-		get() { return this.e(key) }
-	};
+	return { get() { return this.e(key) } };
 };

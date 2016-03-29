@@ -29,6 +29,7 @@
       <w>miterlimit</w>
       <w>mouseenter</w>
       <w>mouseleave</w>
+      <w>mousemove</w>
       <w>ondragenter</w>
       <w>ondragleave</w>
       <w>ondrop</w>
@@ -37,6 +38,7 @@
       <w>onend</w>
       <w>onmove</w>
       <w>onstart</w>
+      <w>powertip</w>
       <w>pred</w>
       <w>resized</w>
       <w>resizeend</w>

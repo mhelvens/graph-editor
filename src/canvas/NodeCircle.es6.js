@@ -4,7 +4,7 @@ import clone    from 'lodash/fp/clone';
 import $        from '../libs/jquery.es6.js';
 import interact from '../libs/interact.js';
 import Kefir    from '../libs/kefir.es6.js';
-import Fraction, {isNumber} from '../libs/fraction.es6.js';
+import Fraction, {isNumber, equals} from '../libs/fraction.es6.js';
 
 import {property} from './ValueTracker.es6.js';
 import {abs, sw} from '../util/misc.es6.js';
@@ -85,7 +85,7 @@ export default class NodeCircle extends SvgDimensionedEntity {
 			if (!this.root.activeTool) { return }
 
 			switch (this.root.activeTool.form) {
-				case 'process': {
+				case 'ProcessTool': {
 					event.stopPropagation();
 					this.root.deployTool_ProcessLine(event, {
 						x: event.pageX,
@@ -97,7 +97,7 @@ export default class NodeCircle extends SvgDimensionedEntity {
 
 		});
 		Kefir.combine([this.p('dragging'), this.root.p('activeTool')]).onValue(([dragging, activeTool]) => {
-			let drawingProcess = activeTool && activeTool.form === 'process';
+			let drawingProcess = activeTool && activeTool.form === 'ProcessTool';
 			shape.toggleClass('pointer',   drawingProcess             );
 			shape.toggleClass('grab',     !drawingProcess && !dragging);
 			shape.toggleClass('grabbing', !drawingProcess &&  dragging);
@@ -109,7 +109,7 @@ export default class NodeCircle extends SvgDimensionedEntity {
 	deployTool_ProcessLine(event, {x, y}) {
 		let process = new ProcessLine({
 			parent: this.root,
-			model : this.root.activeTool.model, // TODO: real process models
+			model : this.root.activeTool.processType,
 			source: this,
 			target: new NodeCircle({
 				parent: this.parent,
@@ -168,17 +168,122 @@ export default class NodeCircle extends SvgDimensionedEntity {
 				visible.y = clamp( this.root.cy, this.root.cy + this.root.cheight )( visible.y );
 
 				/* correction for forced axis alignment */
-				if (interaction.forceAxisAlignment) {
-					let faa = interaction.forceAxisAlignment;
-					let dim = abs(visible.x - faa.x) < abs(visible.y - faa.y) ? 'x' : 'y';
-					visible[dim] = faa[dim];
-				}
+				visible = this._applyAxisAlignmentRestrictions(visible);
 
 				/* set visible (x, y) based on snapping and restriction */
 				this.set(visible);
 
 			}
 		};
+	}
+
+
+	_axisAlignmentsAnchors = new Set;
+	_axisAlignmentRestrictions = { type: 'all' };
+	// { type: 'all'                          }
+	// { type: 'cross', x, y                  }
+	// { type: 'xLine', x                     }
+	// { type: 'yLine', y                     }
+	// { type: 'points', 1: {x, y}, 2: {x, y} }
+	// { type: 'point',  x, y                 }
+	// { type: 'nothing'                      }
+	_processAxisAlignmentRestrictions({x, y}) {
+
+		console.log(JSON.stringify(this._axisAlignmentRestrictions), JSON.stringify({x, y}));
+
+		switch (this._axisAlignmentRestrictions.type) {
+			case 'all': {
+				this._axisAlignmentRestrictions = { type: 'cross', x, y };
+			} break;
+			case 'cross': {
+				let xe = equals(this._axisAlignmentRestrictions.x, x),
+				    ye = equals(this._axisAlignmentRestrictions.y, y);
+				if (xe && !ye) {
+					this._axisAlignmentRestrictions = { type: 'xLine', x };
+				} else if (!xe && ye) {
+					this._axisAlignmentRestrictions = { type: 'yLine', y };
+				} else if (!xe && !ye) {
+					this._axisAlignmentRestrictions = { type: 'points', 1: { x: this._axisAlignmentRestrictions.x, y }, 2: { x, y: this._axisAlignmentRestrictions.y } };
+				}
+			} break;
+			case 'xLine': {
+				if (!equals(x, this._axisAlignmentRestrictions.x)) {
+					this._axisAlignmentRestrictions = { type: 'point', x, y };
+				}
+			} break;
+			case 'yLine': {
+				if (!equals(y, this._axisAlignmentRestrictions.y)) {
+					this._axisAlignmentRestrictions = { type: 'point', x, y };
+				}
+			} break;
+			case 'points': {
+				if (!equals(this._axisAlignmentRestrictions[1].x, x) && !equals(this._axisAlignmentRestrictions[1].y, y)) { delete this._axisAlignmentRestrictions[1] }
+				if (!equals(this._axisAlignmentRestrictions[2].x, x) && !equals(this._axisAlignmentRestrictions[2].y, y)) { delete this._axisAlignmentRestrictions[2] }
+				if      ( this._axisAlignmentRestrictions[1] && !this._axisAlignmentRestrictions[2]) { this._axisAlignmentRestrictions = { type: 'point', ...this._axisAlignmentRestrictions[1]} }
+				else if (!this._axisAlignmentRestrictions[1] &&  this._axisAlignmentRestrictions[2]) { this._axisAlignmentRestrictions = { type: 'point', ...this._axisAlignmentRestrictions[2]} }
+				else if (!this._axisAlignmentRestrictions[1] && !this._axisAlignmentRestrictions[2]) { this._axisAlignmentRestrictions = { type: 'nothing'             } }
+			} break;
+			case 'point': {
+				if (!equals(this._axisAlignmentRestrictions.x, x) && !equals(this._axisAlignmentRestrictions.y, y)) {
+					this._axisAlignmentRestrictions = { type: 'nothing' }
+				}
+			} break;
+		}
+
+		console.log(JSON.stringify(this._axisAlignmentRestrictions));
+
+	}
+	_applyAxisAlignmentRestrictions({x, y}) {
+		let result = {x, y};
+		switch (this._axisAlignmentRestrictions.type) {
+			case 'cross': {
+				let dim = abs(result.x - this._axisAlignmentRestrictions.x) < abs(result.y - this._axisAlignmentRestrictions.y) ? 'x' : 'y';
+				result[dim] = this._axisAlignmentRestrictions[dim];
+			} break;
+			case 'xLine': {
+				result.x = this._axisAlignmentRestrictions.x
+			} break;
+			case 'yLine': {
+				result.y = this._axisAlignmentRestrictions.y
+			} break;
+			case 'points': {
+				let d1 = (result.x - this._axisAlignmentRestrictions[1].x)**2 + (result.y - this._axisAlignmentRestrictions[1].y)**2,
+				    d2 = (result.x - this._axisAlignmentRestrictions[2].x)**2 + (result.y - this._axisAlignmentRestrictions[2].y)**2;
+				if (d1 < d2) {
+					result.x = this._axisAlignmentRestrictions[1].x;
+					result.y = this._axisAlignmentRestrictions[1].y;
+				} else {
+					result.x = this._axisAlignmentRestrictions[2].x;
+					result.y = this._axisAlignmentRestrictions[2].y;
+				}
+			} break;
+			case 'point': {
+				result.x = this._axisAlignmentRestrictions.x;
+				result.y = this._axisAlignmentRestrictions.y;
+			} break;
+		}
+		return result;
+	}
+	addAxisAlignmentAnchor(anchor) {
+		this._axisAlignmentsAnchors.add(anchor);
+		Kefir.merge([
+			Kefir.once(),
+			anchor.p('x').changes(),
+			anchor.p('y').changes(),
+		    anchor.e('delete')
+		]).debounce(200).onValue(() => {
+			this._refreshAxisAlignmentRestrictions();
+		});
+	}
+	removeAxisAlignmentAnchor(anchor) {
+		this._axisAlignmentsAnchors.delete(anchor);
+		this._refreshAxisAlignmentRestrictions();
+	}
+	_refreshAxisAlignmentRestrictions() {
+		this._axisAlignmentRestrictions = { type: 'all' };
+		for (let a of this._axisAlignmentsAnchors) {
+			this._processAxisAlignmentRestrictions(a);
+		}
 	}
 
 }

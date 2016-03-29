@@ -29,10 +29,10 @@ const GRAB_ICON      = require('../img/grab.png');
 				<!--</div>-->
 	        <!--</div>-->
 
-			<!--<div class="list-group-item resource-view" [class.active]=" toolSelected('process', activeTool) ">
+			<!--<div class="list-group-item resource-view" [class.active]=" toolSelected('ProcessTool', activeTool) ">
 				<div class="text-content" style="text-align: left">Process</div>
 				<div class="buttons">
-					<div class="button line" (click)=" activeToolChange.next({form:'process'}) "></div>
+					<div class="button line" (click)=" activeToolChange.next({form:'ProcessTool'}) "></div>
 				</div>
 	        </div>-->
 
@@ -102,7 +102,7 @@ export default class MiscToolButtonsListComponent {
 	filterText(model) { return model.name }
 
 	toolSelected(form) {
-		return (!form && !this.activeTool) || (this.activeTool && this.activeTool.form  === form);
+		return (!form && !this.activeTool) || (this.activeTool && this.activeTool.type  === form);
 	}
 
 	setTool(form) {
