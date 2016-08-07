@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="cd06e09a-a56c-433f-abf2-827582d49919" name="Linode (old-graph-editor)" url="">
+        <fileTransfer host="178.79.140.159" port="22" rootFolder="/home/old-graph-editor" accessType="SFTP" password="dfc7dfc2dfc7dfc2df9bdf99" username="old-graph-editor">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

@@ -84,8 +84,4 @@ export const sw = (val, {autoInvoke = true} = {}) => (map) => {
 
 export const swf = (map, options) => (val) => sw(val, options)(map);
 
-export const min = Math.min;
-export const max = Math.max;
-export const abs = Math.abs;
-
 export const inbetween = (a) => zip(initial(a), tail(a));

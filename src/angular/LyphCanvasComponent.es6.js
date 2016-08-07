@@ -3,12 +3,8 @@ import $                                                        from '../libs/jq
 import join                                                     from 'lodash/fp/join';
 import get                                                      from 'lodash/fp/get';
 import defer                                                    from 'lodash/defer';
-import pick                                                     from 'lodash/pick';
-import isUndefined                                              from 'lodash/isUndefined';
 import interact                                                 from '../libs/interact.js';
 import Kefir from '../libs/kefir.es6.js';
-
-import {sw, abs} from '../util/misc.es6.js';
 
 import {property, event}  from '../canvas/ValueTracker.es6.js';
 import SvgContainerEntity from '../canvas/SvgContainerEntity.es6.js';
@@ -129,124 +125,6 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 			}
 		};
 	}
-	
-	// async deployTool_ProcessLine(event, {x, y}) {
-	// 	let process = new ProcessLine({
-	// 		parent: this,
-	// 		model : this.activeTool.processType,
-	// 		source: this.activeTool.lastNodeTarget || new NodeCircle({
-	// 			parent: this,
-	// 			model : { id: -1, name: 'test source node' }, // TODO: real node models
-	// 			x, y
-	// 		}),
-	// 		target: new NodeCircle({
-	// 			parent: this,
-	// 			model : { id: -1, name: 'test target node' }, // TODO: real node models
-	// 			x, y
-	// 		})
-	// 	});
-	// 	this.appendChildElement(process.source);
-	// 	this.appendChildElement(process.target);
-	// 	this.appendChildElement(process);
-	//
-	// 	if (this.activeTool.type === 'CanonicalTreeTool') {
-	// 		this.activeTool.lyphTemplate = this.activeTool.canonicalTree.getLevels()[this.activeTool.currentLevel].getLyphTemplate();
-	//
-	// 		if (this.activeTool.currentLevel === 1) {
-	// 			console.log(this.activeTool.currentLevel);
-	// 			this.element.powerTip({ followMouse: true, fadeInTime: 0, fadeOutTime: 0 });
-	// 		}
-	// 		let toolTipText = `level ${this.activeTool.currentLevel} of ${this.activeTool.canonicalTree.levels.length}`;
-	// 		this.element.data('powertip', toolTipText);
-	// 		$('#powerTip').html(toolTipText);
-	// 	}
-	//
-	// 	let lyphTemplateBox = null;
-	// 	if (this.activeTool.type === 'ConveyedProcessTool' || this.activeTool.type === 'CanonicalTreeTool') {
-	//
-	// 		const RADIUS  = 100;
-	//
-	// 		lyphTemplateBox = new LyphTemplateBox({
-	// 			parent: this,
-	// 			model : this.activeTool.lyphTemplate,
-	// 			height: RADIUS
-	// 		});
-	// 		this.appendChildElement(lyphTemplateBox);
-	//
-	// 		process.target.p(['x', 'y']).takeUntilBy(
-	// 			process.target.p('dragging').value(false).skipUntilBy(process.target.p('dragging').value(true))
-	// 		).onValue(([x, y]) => {
-	// 			const src = process.source;
-	// 			let ltb = lyphTemplateBox;
-	// 			let {
-	// 			    axisThickness,
-	// 			    layerTemplateBoxes: [{ model: { representativeThickness: layer1Thickness } }],
-	// 			    model: { representativeThickness: lyphTemplateThickness }
-	// 		    } = lyphTemplateBox;
-	// 			const layer1Shift = axisThickness + (RADIUS - axisThickness) * (layer1Thickness / lyphTemplateThickness) / 2;
-	// 			if (src.x < x) {
-	// 				ltb.rotation = 0;
-	// 				ltb.width    = Math.min(  abs(x-src.x),  100  );
-	// 				ltb.x        = src.x + (abs(x-src.x) - ltb.width) / 2;
-	// 				ltb.height   = RADIUS;
-	// 				ltb.y        = y - RADIUS + layer1Shift;
-	// 			} else if (src.y < y) {
-	// 				ltb.rotation = 90;
-	// 				ltb.height   = Math.min(  abs(y-src.y),  100  );
-	// 				ltb.y        = src.y + (abs(y-src.y) - ltb.height) / 2;
-	// 				ltb.width    = RADIUS;
-	// 				ltb.x        = x - layer1Shift;
-	// 			} else if (x < src.x) {
-	// 				ltb.rotation = 180;
-	// 				ltb.width    = Math.min(  abs(src.x-x),  100  );
-	// 				ltb.x        = x + (abs(x-src.x) - ltb.width) / 2;
-	// 				ltb.height   = RADIUS;
-	// 				ltb.y        = y - layer1Shift;
-	// 			} else if (y < src.y) {
-	// 				ltb.rotation = 270;
-	// 				ltb.height   = Math.min(  abs(src.y-y),  100  );
-	// 				ltb.y        = y + (abs(y-src.y) - ltb.height) / 2;
-	// 				ltb.width    = RADIUS;
-	// 				ltb.x        = x - RADIUS + layer1Shift;
-	// 			}
-	// 		});
-	//
-	// 	}
-	//
-	// 	let result = await process.target.startDraggingBy(event, {
-	// 		forceAxisAlignment: (this.activeTool.type === 'ConveyedProcessTool' || this.activeTool.type === 'CanonicalTreeTool') ? pick(process.source, 'x', 'y') : null
-	// 	});
-	// 	switch (result.status) {
-	// 		case 'finished': {
-	// 			this.activeTool.currentLevel += 1;
-	// 			this.activeTool.lastNodeTarget = process.target;
-	// 			if (this.activeTool.type === 'CanonicalTreeTool' && this.activeTool.currentLevel >= this.activeTool.canonicalTree.levels.length) {
-	// 				this.activeTool = null;
-	// 			}
-	// 		} break;
-	// 		case 'aborted': {
-	// 			let {source: s, target: t} = process;
-	// 			process.delete();
-	// 			if (!this.activeTool.lastNodeTarget) { s.delete() }
-	// 			t.delete();
-	// 			this.activeTool = null;
-	// 		} break;
-	// 	}
-	// };
-	//
-	// async deployTool_LyphTemplateBox(event, {x, y}) {
-	// 	let lyphTemplateBox = new LyphTemplateBox({
-	// 		parent: this,
-	// 		model : this.activeTool.lyphTemplate,
-	// 		x, y
-	// 	});
-	// 	this.appendChildElement(lyphTemplateBox);
-	// 	let result = await lyphTemplateBox.startResizingBy(event);
-	// 	if (result.status === 'aborted') {
-	// 		lyphTemplateBox.delete();
-	// 	}
-	// 	this.activeTool = null;
-	// };
 
 	appendChildElement(newChild) {
 		if (newChild instanceof LyphTemplateBox) {
@@ -258,20 +136,6 @@ export default class LyphCanvasComponent extends SvgContainerEntity {
 		if (newChild instanceof NodeCircle) {
 			this.element.children('.svg-process-edges').append(newChild.element);
 		}
-	}
-
-	pageToCanvas({x, y, left, right, top, bottom, width, height}) {
-
-		// TODO: remove function and function uses
-
-		// let r = this.element.getBoundingClientRect();
-		// if (isFinite(x))      { x      -= r.left }
-		// if (isFinite(left))   { left   -= r.left }
-		// if (isFinite(right))  { right  -= r.left }
-		// if (isFinite(y))      { y      -= r.top  }
-		// if (isFinite(top))    { top    -= r.top  }
-		// if (isFinite(bottom)) { bottom -= r.top  }
-		return {x, y, left, right, top, bottom, width, height};
 	}
 
 }

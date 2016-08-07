@@ -323,12 +323,11 @@ export default class LyphTemplateBox extends SvgContainerEntity {
 				/* initialize interaction-local variables */
 				raw  = pick(this, 'x', 'y', 'width', 'height');
 			},
-			onmove: ({rect, edges, ctrlKey, interaction}) => {
-				let proposedRect = this.pageToCanvas(rect);
+			onmove: ({rect, edges, ctrlKey}) => {
 
 				/* update raw coordinates */
-				raw.width  = Math.max(proposedRect.width,  this.minWidth );
-				raw.height = Math.max(proposedRect.height, this.minHeight);
+				raw.width  = Math.max(rect.width,  this.minWidth );
+				raw.height = Math.max(rect.height, this.minHeight);
 
 				/* maintain aspect ratio */
 				if (ctrlKey) {
@@ -337,8 +336,8 @@ export default class LyphTemplateBox extends SvgContainerEntity {
 				}
 
 				/* correct for left and top edge dragging */
-				if (edges.left) { raw.x = proposedRect.left - (raw.width  - proposedRect.width ) }
-				if (edges.top)  { raw.y = proposedRect.top  - (raw.height - proposedRect.height) }
+				if (edges.left) { raw.x = rect.left - (raw.width  - rect.width ) }
+				if (edges.top)  { raw.y = rect.top  - (raw.height - rect.height) }
 
 				/* initialize visible coordinates */
 				let visible = clone(raw);

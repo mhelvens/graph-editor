@@ -5,9 +5,9 @@ import pick         from 'lodash/pick';
 import isUndefined  from 'lodash/isUndefined';
 import Kefir        from '../libs/kefir.es6.js';
 
-import {abs}           from '../util/misc.es6.js';
 import LyphTemplateBox from '../canvas/LyphTemplateBox.es6.js';
 
+const {abs} = Math;
 
 const lastNodeTarget = Symbol('lastNodeTarget');
 

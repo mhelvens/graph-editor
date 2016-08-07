@@ -35,8 +35,8 @@ export default class ProcessTool extends Tool {
 			}))
 		}));
 		entity.appendChildElement(this.process.source);
-		entity.appendChildElement(this.process.target);
-		entity.appendChildElement(this.process       );
+		entity.root.appendChildElement(this.process.target);
+		entity.root.appendChildElement(this.process       );
 
 		/* actually start the process of dragging the target node */
 		let result = await this.startDraggingProcess(event);

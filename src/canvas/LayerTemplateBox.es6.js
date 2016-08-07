@@ -220,6 +220,7 @@ export default class LayerTemplateBox extends SvgContainerEntity {
 
 		/* using the current tool on mouse-down */
 		layerTemplate.cssPlug('pointer-events', this.root.p('activeTool').map(at => at?'all':'none').takeUntilBy(this.e('delete')));
+		layerTemplate.cssPlug('cursor', this.root.p('activeTool').map(at => at?'pointer':'auto').takeUntilBy(this.e('delete')));
 		interact(layerTemplate[0]).on('down', (event) => {
 			if (!this.root.activeTool) { return } // TODO: instead of this test, use the Null Object design pattern
 			event.preventDefault();
@@ -232,7 +233,7 @@ export default class LayerTemplateBox extends SvgContainerEntity {
 
 	dropzone() {
 		return {
-			overlap: 1, // require whole rectangle to be inside
+			overlap: 1, // TODO: put 'center' and correct for incomplete coverage
 			ondropactivate: (event) => {
 				// add active dropzone feedback
 			},

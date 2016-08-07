@@ -1,3 +1,6 @@
+console.info("Loaded index.es6.js...");
+
+
 /* library imports */
 import {bootstrap}                          from 'angular2/bootstrap';
 import {Component, provide, enableProdMode} from 'angular2/core';

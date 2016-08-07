@@ -7,11 +7,13 @@ import Kefir    from '../libs/kefir.es6.js';
 import Fraction, {isNumber, equals} from '../libs/fraction.es6.js';
 
 import {property} from './ValueTracker.es6.js';
-import {abs, sw} from '../util/misc.es6.js';
 
-import SvgDimensionedEntity        from './SvgDimensionedEntity.es6.js';
-import LayerTemplateBox from './LayerTemplateBox.es6.js';
-import ProcessLine      from './ProcessLine.es6.js';
+import SvgDimensionedEntity from './SvgDimensionedEntity.es6.js';
+import LayerTemplateBox     from './LayerTemplateBox.es6.js';
+import ProcessLine          from './ProcessLine.es6.js';
+
+
+const {abs} = Math;
 
 
 export default class NodeCircle extends SvgDimensionedEntity {
@@ -152,12 +154,12 @@ export default class NodeCircle extends SvgDimensionedEntity {
 				let snap = { x: Infinity, y: Infinity };
 				this.root.traverse(LayerTemplateBox, (layer) => {
 					if (layer.y < raw.y && raw.y < layer.y + layer.height) {
-						if (abs(layer.x                - raw.x) < abs(snap.x)) { snap.x = layer.x                - raw.x + 4 }
-						if (abs(layer.x + layer.width  - raw.x) < abs(snap.x)) { snap.x = layer.x + layer.width  - raw.x - 4 }
+						if (abs(layer.x                - raw.x) < abs(snap.x)) { snap.x = layer.x                - raw.x + 1 }
+						if (abs(layer.x + layer.width  - raw.x) < abs(snap.x)) { snap.x = layer.x + layer.width  - raw.x - 1 }
 					}
 					if (layer.x < raw.x && raw.x < layer.x + layer.width) {
-						if (abs(layer.y                - raw.y) < abs(snap.y)) { snap.y = layer.y                - raw.y + 4 }
-						if (abs(layer.y + layer.height - raw.y) < abs(snap.y)) { snap.y = layer.y + layer.height - raw.y - 4 }
+						if (abs(layer.y                - raw.y) < abs(snap.y)) { snap.y = layer.y                - raw.y + 1 }
+						if (abs(layer.y + layer.height - raw.y) < abs(snap.y)) { snap.y = layer.y + layer.height - raw.y - 1 }
 					}
 				});
 				if (abs(snap.x) <= abs(snap.y) && abs(snap.x) <= NodeCircle.SNAP_DISTANCE) { visible.x += snap.x }

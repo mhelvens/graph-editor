@@ -46,11 +46,6 @@ import ValueTracker, {property} from './ValueTracker.es6.js';
 		return this._element;
 	};
 
-	pageToCanvas(positioning) {
-		return this.root.pageToCanvas(positioning);
-	}
-
-
 	// private /////////////////////////////////////////////////////////////////////////////////////
 
 	_makeInteractable(mainElement) {
