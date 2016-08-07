@@ -1,4 +1,3 @@
-import {abstract} from 'core-decorators';
 import pick      from 'lodash/pick';
 import isFinite  from 'lodash/isFinite';
 import invokeMap from 'lodash/invokeMap';
@@ -20,7 +19,7 @@ const ROTATION_TO_ORIENTATION = swf({
 });
 
 
-@abstract export default class SvgDimensionedEntity extends SvgEntity {
+export default class SvgDimensionedEntity extends SvgEntity {
 
 	@property({isValid: isNumber                                         }) x; ////// global
 	@property({isValid: isNumber                                         }) y;

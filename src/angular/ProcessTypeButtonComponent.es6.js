@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Inject} from '../../node_modules/angular2/core';
+import {Component, EventEmitter, Inject} from '@angular/core';
 import ProcessTool from '../tools/ProcessTool.es6.js';
 
 @Component({

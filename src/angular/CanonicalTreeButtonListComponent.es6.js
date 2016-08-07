@@ -1,4 +1,4 @@
-import {Component, EventEmitter} from '../../node_modules/angular2/core';
+import {Component, EventEmitter} from '@angular/core';
 import $                         from 'jquery';
 
 import CanonicalTreeButtonComponent from './CanonicalTreeButtonComponent.es6.js';
@@ -33,12 +33,12 @@ import CanonicalTree from '../resources/CanonicalTree.es6.js';
 			<!--<div style="visibility: hidden; height: 34px"></div>-->
 
 			<canonical-tree
-				*ngFor             = " #model of models | fieldSubstring:filterText:filter "
-				 class             = " list-group-item                                     "
-				[model]            = " model                                               "
-				[activeTool]       = " activeTool                                          "
-				(activeToolChange) = " activeToolChange.next($event)                       "
-				[highlight]        = " filter                                              ">
+				*ngFor             = " let model of models | fieldSubstring:filterText:filter "
+				 class             = " list-group-item                                        "
+				[model]            = " model                                                  "
+				[activeTool]       = " activeTool                                             "
+				(activeToolChange) = " activeToolChange.next($event)                          "
+				[highlight]        = " filter                                                 ">
 	        </canonical-tree>
 		</div>
 

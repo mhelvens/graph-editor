@@ -1,4 +1,4 @@
-import {Pipe} from '../../node_modules/angular2/core';
+import {Pipe} from '@angular/core';
 
 
 @Pipe({ name: 'escapeHTML' })

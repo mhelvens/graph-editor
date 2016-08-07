@@ -2,8 +2,8 @@ console.info("Loaded index.es6.js...");
 
 
 /* library imports */
-import {bootstrap}                          from 'angular2/bootstrap';
-import {Component, provide, enableProdMode} from 'angular2/core';
+import {bootstrap}                          from '@angular/platform-browser-dynamic';
+import {Component, provide, enableProdMode} from '@angular/core';
 import $                                    from './libs/jquery.es6.js';
 import GoldenLayout                         from './libs/golden-layout.es6.js';
 import Kefir                                from './libs/kefir.es6.js';
@@ -59,7 +59,7 @@ import './index.scss';
 
 	/* AngularJS 2 app component */
 	console.info("Bootstrapping application...");
-	await new Promise((resolve) => {
+	await new Promise((resolve, reject) => {
 		try {
 			@Component({
 				selector: 'bootstrap',

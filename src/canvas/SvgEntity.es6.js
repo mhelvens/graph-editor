@@ -1,4 +1,3 @@
-import {abstract} from 'core-decorators';
 import pick       from 'lodash/pick';
 import interact   from '../libs/interact.js';
 import Kefir      from '../libs/kefir.es6.js';
@@ -14,7 +13,7 @@ const deleteClicker = Symbol('deleteClicker');
 const deleted       = Symbol('deleted');
 
 
-@abstract export default class SvgEntity extends SvgObject {
+export default class SvgEntity extends SvgObject {
 
 	model;
 	root;

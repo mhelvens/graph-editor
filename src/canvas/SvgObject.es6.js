@@ -1,4 +1,3 @@
-import {abstract} from 'core-decorators';
 import identity   from 'lodash/identity';
 import pick       from 'lodash/pick';
 import interact   from '../libs/interact.js';
@@ -6,7 +5,7 @@ import interact   from '../libs/interact.js';
 import ValueTracker, {property} from './ValueTracker.es6.js';
 
 
-@abstract export default class SvgObject extends ValueTracker {
+export default class SvgObject extends ValueTracker {
 
 	// properties //////////////////////////////////////////////////////////////////////////////////
 

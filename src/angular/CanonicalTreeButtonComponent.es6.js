@@ -1,4 +1,4 @@
-import {Component, EventEmitter} from '../../node_modules/angular2/core';
+import {Component, EventEmitter} from '@angular/core';
 import CanonicalTreeTool from '../tools/CanonicalTreeTool.es6.js';
 
 const LINE_ICON = require('../img/draw-line.png');

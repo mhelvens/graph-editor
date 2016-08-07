@@ -5,9 +5,9 @@ module.exports = {
 	entry: {
 		'index': [
 			'babel-polyfill',
-			'reflect-metadata',
-			'expose?Zone!zone.js',
-			'./src/util/polyfills.es6.js',
+			// 'expose?Zone!zone.js/dist/zone',
+			'zone.js',
+			'svg-innerhtml',
 			'./src/index.es6.js'
 		]
 	},
@@ -25,13 +25,8 @@ module.exports = {
 					cacheDirectory: true,
 					presets: [
 						'es2015',
-						'stage-0'
-					],
-					plugins: [
-						'angular2-annotations',
-						'transform-decorators-legacy',
-						'transform-class-properties',
-						'transform-flow-strip-types'
+						'stage-0',
+					    'angular2'
 					]
 				}
 			},
@@ -48,11 +43,11 @@ module.exports = {
 			{ test: /bootstrap-sass\/assets\/javascripts\//, loader: 'imports?jQuery=jquery' },
 
 			/* bootstrap specific stuff */
-			{ test: /\.woff(\?v=\d+\.\d+\.\d+)?$/,  loader: 'url?limit=10000&minetype=application/font-woff'    },
-			{ test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/, loader: 'url?limit=10000&minetype=application/font-woff'    },
-			{ test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,   loader: 'url?limit=10000&minetype=application/octet-stream' },
+			{ test: /\.woff(\?v=\d+\.\d+\.\d+)?$/,  loader: 'url?limit=10000&mimetype=application/font-woff'    },
+			{ test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/, loader: 'url?limit=10000&mimetype=application/font-woff'    },
+			{ test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,   loader: 'url?limit=10000&mimetype=application/octet-stream' },
 			{ test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,   loader: 'file'                                              },
-			{ test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,   loader: 'url?limit=10000&minetype=image/svg+xml'            }
+			{ test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,   loader: 'url?limit=10000&mimetype=image/svg+xml'            }
 		]
 	},
 	sassLoader: {

@@ -1,4 +1,3 @@
-import {abstract} from 'core-decorators';
 import fromPairs  from 'lodash/fromPairs';
 import at         from 'lodash/at';
 
@@ -7,7 +6,7 @@ const resources = new Resources;
 
 const cache = Symbol('cache');
 
-@abstract export default class Resource {
+export default class Resource {
 	
 	static get_sync(ids) {
 		if (!this[cache]) { this[cache] = {} }

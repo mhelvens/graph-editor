@@ -1,4 +1,4 @@
-import {Component, ChangeDetectorRef, ElementRef, EventEmitter} from '../../node_modules/angular2/core';
+import {Component, ChangeDetectorRef, ElementRef, EventEmitter} from '@angular/core';
 import $                                                        from '../libs/jquery.es6.js';
 import join                                                     from 'lodash/fp/join';
 import get                                                      from 'lodash/fp/get';

@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Inject} from '../../node_modules/angular2/core';
+import {Component, EventEmitter, Inject} from '@angular/core';
 import LyphTemplateTool    from '../tools/LyphTemplateTool.es6.js';
 import ConveyedProcessTool from '../tools/ConveyedProcessTool.es6.js';
 

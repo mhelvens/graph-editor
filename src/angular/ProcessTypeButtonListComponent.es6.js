@@ -1,4 +1,4 @@
-import {Component, EventEmitter} from '../../node_modules/angular2/core';
+import {Component, EventEmitter} from '@angular/core';
 
 import ProcessTypeButtonComponent from './ProcessTypeButtonComponent.es6.js';
 import ProcessType from '../resources/ProcessType.es6.js';
@@ -32,12 +32,12 @@ import ProcessType from '../resources/ProcessType.es6.js';
 			<!--<div style="visibility: hidden; height: 34px"></div>-->
 
 			<process-type
-				*ngFor             = " #model of models | fieldSubstring:filterText:filter "
-				 class             = " list-group-item                                     "
-				[model]            = " model                                               "
-				[activeTool]       = " activeTool                                          "
-				(activeToolChange) = " activeToolChange.next($event)                       "
-				[highlight]        = " filter                                              ">
+				*ngFor             = " let model of models | fieldSubstring:filterText:filter "
+				 class             = " list-group-item                                        "
+				[model]            = " model                                                  "
+				[activeTool]       = " activeTool                                             "
+				(activeToolChange) = " activeToolChange.next($event)                          "
+				[highlight]        = " filter                                                 ">
 	        </process-type>
 		</div>
 

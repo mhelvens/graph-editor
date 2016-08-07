@@ -14,6 +14,7 @@
       <w>deps</w>
       <w>dragend</w>
       <w>dropzone</w>
+      <w>innerhtml</w>
       <w>interactable</w>
       <w>jsviews</w>
       <w>kefir</w>
@@ -26,6 +27,7 @@
       <w>lthickness</w>
       <w>lwidth</w>
       <w>lyph</w>
+      <w>mimetype</w>
       <w>miterlimit</w>
       <w>mouseenter</w>
       <w>mouseleave</w>

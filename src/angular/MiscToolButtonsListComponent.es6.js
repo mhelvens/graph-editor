@@ -1,4 +1,4 @@
-import {Component, EventEmitter} from '../../node_modules/angular2/core';
+import {Component, EventEmitter} from '@angular/core';
 
 
 const RECTANGLE_ICON = require('../img/draw-rectangle.png');

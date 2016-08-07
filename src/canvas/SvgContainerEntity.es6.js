@@ -1,4 +1,3 @@
-import {abstract} from 'core-decorators';
 import pick       from 'lodash/pick';
 import isFinite   from 'lodash/isFinite';
 import invokeMap  from 'lodash/invokeMap';
@@ -11,7 +10,7 @@ import SvgDimensionedEntity from './SvgDimensionedEntity.es6.js';
 const pluggedIntoParent = Symbol('pluggedIntoParent');
 
 
-@abstract export default class SvgContainerEntity extends SvgDimensionedEntity {
+export default class SvgContainerEntity extends SvgDimensionedEntity {
 
 	@property({isValid: isNumber}) cx; ///////  container positioning (global)
 	@property({isValid: isNumber}) cy;

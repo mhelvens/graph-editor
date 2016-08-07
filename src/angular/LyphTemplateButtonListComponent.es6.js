@@ -1,4 +1,4 @@
-import {Component, EventEmitter} from '../../node_modules/angular2/core';
+import {Component, EventEmitter} from '@angular/core';
 import $                         from 'jquery';
 
 import LyphTemplateButtonComponent from './LyphTemplateButtonComponent.es6.js';
@@ -33,12 +33,12 @@ import LyphTemplate                from '../resources/LyphTemplate.es6.js';
 			<!--<div style="visibility: hidden; height: 34px"></div>-->
 
 			<lyph-template
-				*ngFor             = " #model of models | fieldSubstring:filterText:filter "
-				 class             = " list-group-item                                     "
-				[model]            = " model                                               "
-				[activeTool]       = " activeTool                                          "
-				(activeToolChange) = " activeToolChange.next($event)                       "
-				[highlight]        = " filter                                              ">
+				*ngFor             = " let model of models | fieldSubstring:filterText:filter "
+				 class             = " list-group-item                                        "
+				[model]            = " model                                                  "
+				[activeTool]       = " activeTool                                             "
+				(activeToolChange) = " activeToolChange.next($event)                          "
+				[highlight]        = " filter                                                 ">
 	        </lyph-template>
 		</div>
 

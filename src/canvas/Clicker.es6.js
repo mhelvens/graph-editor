@@ -1,5 +1,4 @@
-import {abstract} from 'core-decorators';
-import $          from '../libs/jquery.es6.js';
+import $ from '../libs/jquery.es6.js';
 
 import {event} from './ValueTracker.es6.js';
 import SvgObject from './SvgObject.es6.js';
@@ -10,7 +9,7 @@ export default class Clicker extends SvgObject {
 
 	@event() clicks;
 
-	@abstract decorateCircle(circle) {}
+	decorateCircle(circle) {}
 
 	createElement() {
 		

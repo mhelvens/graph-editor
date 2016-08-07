@@ -1,9 +1,9 @@
-import {Pipe} from '../../node_modules/angular2/core';
+import {Pipe} from '@angular/core';
 
 
 @Pipe({ name: 'filter' })
 export default class FilterPipe {
-	transform(list, [pred]) {
+	transform(list, pred) {
 		return list.filter(pred);
 	}
 }
